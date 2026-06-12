@@ -25,6 +25,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.justmind.companion
         PRODUCT_NAME: Just Mind
+        PRODUCT_MODULE_NAME: JustMind
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: JustMind/Resources/Info.plist
@@ -39,3 +40,19 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         ENABLE_PREVIEWS: YES
         GENERATE_INFOPLIST_FILE: NO
+    scheme:
+      testTargets:
+        - JustMindTests
+  JustMindTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: JustMindTests
+    dependencies:
+      - target: JustMind
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.justmind.companion.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1,2"

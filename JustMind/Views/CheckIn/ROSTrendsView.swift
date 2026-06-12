@@ -72,7 +72,7 @@ struct ROSTrendsView: View {
                 EmptyStateCard(
                     icon: "chart.xyaxis.line",
                     text: windowed.isEmpty
-                        ? "No RŌS entries in this window. Trends appear after a couple of check-ins."
+                        ? "No Wellbeing Check-In entries in this window. Trends appear after a couple of check-ins."
                         : "One entry in this window. A second entry unlocks the trend."
                 )
             } else {
@@ -219,7 +219,7 @@ struct ROSTrendsView: View {
                 .foregroundStyle(JMColor.textSecondary)
                 .tracking(1)
                 .textCase(.uppercase)
-            Text("Each line traces one of the four RŌS questions on a 0–10 scale across the selected window.")
+            Text("Each line traces one of the four Wellbeing Check-In questions on a 0–10 scale across the selected window.")
                 .font(JMFont.caption)
                 .foregroundStyle(JMColor.textSecondary)
                 .lineSpacing(2)
@@ -302,7 +302,7 @@ struct ROSTrendsView: View {
     }
 
     private var notes: some View {
-        Text("Trends are computed locally from the entries on this device. The clinical cutoff (25) and Reliable Change Index (6) follow the published RŌS guidance for adults.")
+        Text("Trends are computed locally from the entries on this device. The clinical cutoff (25) and Reliable Change Index (6) follow the published guidance for adults from the RŌS, the validated instrument the Wellbeing Check-In is based on.")
             .font(JMFont.caption)
             .foregroundStyle(JMColor.textSecondary)
             .lineSpacing(2)

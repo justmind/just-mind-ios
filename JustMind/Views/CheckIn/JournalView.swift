@@ -14,6 +14,8 @@ struct JournalView: View {
     @State private var prompt: String = JournalPrompts.promptForToday()
     @State private var expandedEntries: Set<UUID> = []
     @State private var showFullHistory: Bool = false
+    @State private var editingEntry: MoodEntry?
+    @State private var pendingDelete: MoodEntry?
     @FocusState private var bodyFocused: Bool
 
     private enum SavePhase: Equatable {
@@ -67,6 +69,29 @@ struct JournalView: View {
                 }
             }
         }
+        .sheet(item: $editingEntry) { JournalEntryEditorSheet(entry: $0) }
+        .confirmationDialog(
+            "Delete this entry?",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { confirmDelete() }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: {
+            Text("This permanently removes the entry from this device.")
+        }
+    }
+
+    private func confirmDelete() {
+        if let entry = pendingDelete {
+            context.delete(entry)
+            try? context.save()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        pendingDelete = nil
     }
 
     // MARK: Editing state
@@ -262,6 +287,18 @@ struct JournalView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                editingEntry = entry
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                pendingDelete = entry
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 
     // MARK: Confirmation state

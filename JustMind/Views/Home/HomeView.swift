@@ -156,7 +156,7 @@ struct HomeView: View {
                 selectedTab = .checkIn; checkInSection = .journal
             }
             JMHairline()
-            quickActionRow(systemImage: "list.bullet", title: "Complete RŌS") {
+            quickActionRow(systemImage: "list.bullet", title: "Complete WCI") {
                 selectedTab = .checkIn; checkInSection = .ros
             }
             JMHairline()

@@ -7,7 +7,6 @@ enum UserPreferences {
         static let preferredName = "jm.preferredName"
         static let appLockEnabled = "jm.appLockEnabled"
         static let nextAppointment = "jm.nextAppointment"
-        static let newsletterSubscribed = "jm.newsletterSubscribed"
     }
 }
 
@@ -41,17 +40,12 @@ final class AppPreferences {
             }
         }
     }
-    var newsletterSubscribed: Bool {
-        didSet { UserDefaults.standard.set(newsletterSubscribed, forKey: UserPreferences.Keys.newsletterSubscribed) }
-    }
-
     init() {
         let d = UserDefaults.standard
         self.preferredName = d.string(forKey: UserPreferences.Keys.preferredName) ?? ""
         self.onboardingComplete = d.bool(forKey: UserPreferences.Keys.onboardingComplete)
         self.appLockEnabled = d.bool(forKey: UserPreferences.Keys.appLockEnabled)
         self.nextAppointment = d.object(forKey: UserPreferences.Keys.nextAppointment) as? Date
-        self.newsletterSubscribed = d.bool(forKey: UserPreferences.Keys.newsletterSubscribed)
     }
 
     func resetAll() {
@@ -60,8 +54,7 @@ final class AppPreferences {
             UserPreferences.Keys.onboardingComplete,
             UserPreferences.Keys.preferredName,
             UserPreferences.Keys.appLockEnabled,
-            UserPreferences.Keys.nextAppointment,
-            UserPreferences.Keys.newsletterSubscribed
+            UserPreferences.Keys.nextAppointment
         ] {
             d.removeObject(forKey: key)
         }
@@ -69,6 +62,5 @@ final class AppPreferences {
         onboardingComplete = false
         appLockEnabled = false
         nextAppointment = nil
-        newsletterSubscribed = false
     }
 }

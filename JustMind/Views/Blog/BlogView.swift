@@ -26,16 +26,13 @@ struct BlogView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                contentScroll
-                NewsletterCard()
-            }
-            .background(JMColor.background.ignoresSafeArea())
-            .navigationTitle("Blog")
-            .navigationBarTitleDisplayMode(.inline)
-            .task { await initialLoad() }
-            .refreshable { await refresh() }
-            .sheet(item: $safariItem) { SafariView(url: $0.url) }
+            contentScroll
+                .background(JMColor.background.ignoresSafeArea())
+                .navigationTitle("Blog")
+                .navigationBarTitleDisplayMode(.inline)
+                .task { await initialLoad() }
+                .refreshable { await refresh() }
+                .sheet(item: $safariItem) { SafariView(url: $0.url) }
         }
     }
 
@@ -81,7 +78,7 @@ struct BlogView: View {
                     .padding(.horizontal, JMSpacing.l)
                 }
             }
-            .padding(.bottom, 140) // breathing room above sticky newsletter card
+            .padding(.bottom, JMSpacing.xxl)
             .padding(.top, JMSpacing.s)
         }
     }

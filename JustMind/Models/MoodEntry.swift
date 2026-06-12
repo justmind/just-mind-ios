@@ -1,20 +1,28 @@
 import Foundation
 import SwiftData
 
-/// A single journal entry: how the user is feeling (emoji), what they wrote
-/// about it (body), tags, the writing prompt active when they wrote, and a
-/// timestamp. The "mood" data and the "journal" data live as one row — the
-/// journal IS the place where moods are noted.
+/// A journal entry: free-form text the client writes (often the thing they
+/// want to bring to their next session), the prompt that was showing when
+/// they wrote it, and a timestamp.
+///
+/// Naming note: this type is still called `MoodEntry` because that's the
+/// SwiftData entity name in the on-device store. Renaming the class would be
+/// a destructive schema migration, so the internal name stays while the UI
+/// presents it purely as a journal entry. The `score` and `tags` fields are
+/// vestigial (the app no longer shows a mood emoji or tags) but are retained
+/// as stored properties so existing stores keep opening without a migration.
 @Model
 final class MoodEntry {
     @Attribute(.unique) var id: UUID
     var timestamp: Date
+    /// Vestigial — retained for schema compatibility. Always saved as 3.
     var score: Int
     var body: String
+    /// Vestigial — retained for schema compatibility. Always empty now.
     var tagsRaw: String
     var prompt: String
 
-    init(score: Int, body: String = "", tags: [String] = [], prompt: String = "", timestamp: Date = .now) {
+    init(score: Int = 3, body: String = "", tags: [String] = [], prompt: String = "", timestamp: Date = .now) {
         self.id = UUID()
         self.timestamp = timestamp
         self.score = score
@@ -27,37 +35,4 @@ final class MoodEntry {
         get { tagsRaw.isEmpty ? [] : tagsRaw.split(separator: "|").map(String.init) }
         set { tagsRaw = newValue.joined(separator: "|") }
     }
-
-    var emoji: String { Self.emoji(for: score) }
-
-    var wordCount: Int {
-        body.split { !$0.isLetter && !$0.isNumber && $0 != "'" }.count
-    }
-
-    static func emoji(for score: Int) -> String {
-        switch score {
-        case 1: return "😔"
-        case 2: return "😕"
-        case 3: return "😐"
-        case 4: return "🙂"
-        case 5: return "😊"
-        default: return "😐"
-        }
-    }
-
-    static func label(for score: Int) -> String {
-        switch score {
-        case 1: return "Very Low"
-        case 2: return "Low"
-        case 3: return "Neutral"
-        case 4: return "Good"
-        case 5: return "Great"
-        default: return "Neutral"
-        }
-    }
-
-    static let availableTags: [String] = [
-        "Anxious", "Tired", "Hopeful", "Grateful", "Overwhelmed",
-        "Calm", "Distracted", "Irritable", "Energized", "Sad"
-    ]
 }

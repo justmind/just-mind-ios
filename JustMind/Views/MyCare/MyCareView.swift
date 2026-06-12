@@ -11,6 +11,7 @@ struct MyCareView: View {
     @State private var hasAppt: Bool = false
     @State private var showClearConfirm: Bool = false
     @State private var biometricsUnavailable: String?
+    @State private var showCrisis: Bool = false
 
     private let portalURL = URL(string: "https://justmind.intakeq.com/portal")!
     private let privacyURL = URL(string: "https://justmind.org/privacy-policy/")!
@@ -20,6 +21,7 @@ struct MyCareView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: JMSpacing.xl) {
+                    crisisRow
                     section(title: "Portal") {
                         portalCards
                     }
@@ -37,11 +39,12 @@ struct MyCareView: View {
             .navigationTitle("My Care")
             .navigationBarTitleDisplayMode(.large)
             .sheet(item: $safariItem) { SafariView(url: $0.url) }
+            .sheet(isPresented: $showCrisis) { CrisisResourcesView() }
             .alert("Clear all your data?", isPresented: $showClearConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete Everything", role: .destructive, action: clearAll)
             } message: {
-                Text("This will permanently delete all your journal entries and RŌS entries from this device. This cannot be undone.")
+                Text("This will permanently delete all your journal entries and Wellbeing Check-In entries from this device. This cannot be undone.")
             }
             .onAppear(perform: hydrate)
         }
@@ -56,6 +59,44 @@ struct MyCareView: View {
                 .textCase(.uppercase)
             content()
         }
+    }
+
+    // MARK: Crisis
+
+    private var crisisRow: some View {
+        Button {
+            showCrisis = true
+        } label: {
+            HStack(spacing: JMSpacing.l) {
+                Image(systemName: "lifepreserver")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(JMColor.warning)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Get help now")
+                        .font(JMFont.bodyEmph)
+                        .foregroundStyle(JMColor.textPrimary)
+                    Text("Crisis lines, 24/7 — call or text")
+                        .font(JMFont.caption)
+                        .foregroundStyle(JMColor.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(JMColor.textSecondary.opacity(0.7))
+            }
+            .padding(.horizontal, JMSpacing.l)
+            .padding(.vertical, JMSpacing.l)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(JMColor.warning.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous)
+                .strokeBorder(JMColor.warning.opacity(0.25), lineWidth: JMHairline.width)
+        )
+        .accessibilityHint("Opens crisis support resources")
     }
 
     // MARK: Portal cards

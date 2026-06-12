@@ -66,7 +66,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 0) {
                 featureRow(icon: "chart.line.uptrend.xyaxis", title: "Track your mood", subtitle: "A few seconds, once a day.")
                 JMHairline()
-                featureRow(icon: "list.bullet", title: "Complete your RŌS", subtitle: "Four short questions; trends over time.")
+                featureRow(icon: "list.bullet", title: "Complete your WCI", subtitle: "A short Wellbeing Check-In; trends over time.")
                 JMHairline()
                 featureRow(icon: "book.closed", title: "Journal your way through it", subtitle: "Long-form notes, kept private.")
                 JMHairline()

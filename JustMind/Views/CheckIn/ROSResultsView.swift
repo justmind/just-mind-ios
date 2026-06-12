@@ -9,6 +9,8 @@ struct ROSResultsView: View {
     let onDone: () -> Void
     let onDiscard: () -> Void
 
+    @State private var showCrisis: Bool = false
+
     private var total: Double { individual + interpersonal + social + overall }
 
     private var rciDelta: Double? {
@@ -39,6 +41,10 @@ struct ROSResultsView: View {
 
             messageCard
 
+            if !aboveCutoff {
+                crisisPrompt
+            }
+
             if let delta = rciDelta, abs(delta) >= ROSEntry.reliableChangeIndex {
                 rciCard(delta: delta)
             }
@@ -56,6 +62,43 @@ struct ROSResultsView: View {
                     .buttonStyle(.jmGhost)
             }
         }
+        .sheet(isPresented: $showCrisis) { CrisisResourcesView() }
+    }
+
+    /// Gentle, non-alarmist offer of crisis resources when the score is below
+    /// the clinical cutoff. Not a diagnosis — just makes help one tap away.
+    private var crisisPrompt: some View {
+        Button {
+            showCrisis = true
+        } label: {
+            HStack(spacing: JMSpacing.m) {
+                Image(systemName: "lifepreserver")
+                    .font(.system(size: 16))
+                    .foregroundStyle(JMColor.warning)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Need support right now?")
+                        .font(JMFont.bodyEmph)
+                        .foregroundStyle(JMColor.textPrimary)
+                    Text("Crisis lines are open 24/7 — call or text")
+                        .font(JMFont.caption)
+                        .foregroundStyle(JMColor.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(JMColor.textSecondary.opacity(0.7))
+            }
+            .padding(JMSpacing.l)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(JMColor.warning.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous)
+                    .strokeBorder(JMColor.warning.opacity(0.25), lineWidth: JMHairline.width)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens crisis support resources")
     }
 
     private var scoreBreakdown: some View {
@@ -132,7 +175,7 @@ struct ROSResultsView: View {
     }
 
     private var disclaimer: some View {
-        Text("The RŌS is a validated clinical instrument developed by Seidel et al. (2016). This in-app version is for personal reflection only and does not replace clinical assessment. Share your results with your therapist.")
+        Text("The Wellbeing Check-In is based on the RŌS, a validated clinical instrument developed by Seidel et al. (2016). This in-app version is for personal reflection only and does not replace clinical assessment. Share your results with your therapist.")
             .font(JMFont.caption)
             .foregroundStyle(JMColor.textSecondary)
             .multilineTextAlignment(.center)
@@ -171,6 +214,8 @@ struct ScoreArc: View {
                     .jmDisplayTracking()
                     .foregroundStyle(JMColor.textPrimary)
                     .monospacedDigit()
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
                 Text("of \(Int(max))")
                     .font(JMFont.caption)
                     .foregroundStyle(JMColor.textSecondary)
@@ -182,6 +227,10 @@ struct ScoreArc: View {
                     .tracking(1)
                     .textCase(.uppercase)
             }
+            .padding(.horizontal, JMSpacing.l)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Wellbeing Check-In total score")
+        .accessibilityValue(String(format: "%.1f out of %d. Clinical cutoff is %d.", total, Int(max), Int(cutoff)))
     }
 }

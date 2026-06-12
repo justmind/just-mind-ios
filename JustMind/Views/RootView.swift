@@ -30,6 +30,13 @@ struct RootView: View {
                 LockOverlay(onUnlock: { Task { await unlock() } })
                     .transition(.opacity)
             }
+
+            // Always redact sensitive content from the app-switcher snapshot
+            // and any over-the-shoulder glance when the app isn't frontmost —
+            // independent of whether biometric lock is enabled.
+            if scenePhase != .active && prefs.onboardingComplete {
+                PrivacyCover()
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: prefs.onboardingComplete)
         .animation(.easeInOut(duration: 0.2), value: locked)
@@ -106,6 +113,26 @@ struct RootView: View {
         case .cancelled, .failure:
             locked = true
         }
+    }
+}
+
+/// Branded blur shown whenever the app leaves the foreground, so journal and
+/// Wellbeing Check-In content never appears in the multitasking snapshot.
+private struct PrivacyCover: View {
+    var body: some View {
+        ZStack {
+            JMColor.background.ignoresSafeArea()
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+            Image("LogoSquareMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .opacity(0.9)
+        }
+        .accessibilityHidden(true)
     }
 }
 

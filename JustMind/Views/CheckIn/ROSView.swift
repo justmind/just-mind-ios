@@ -50,7 +50,7 @@ struct ROSView: View {
     private var intro: some View {
         VStack(alignment: .leading, spacing: JMSpacing.xl) {
             VStack(alignment: .leading, spacing: JMSpacing.s) {
-                Text("RŌS")
+                Text("Wellbeing Check-In")
                     .font(JMFont.footnote)
                     .foregroundStyle(JMColor.textSecondary)
                     .tracking(2)
@@ -192,7 +192,7 @@ struct ROSView: View {
 
     /// Persist the entry immediately on completing the four items, then show
     /// results. This guarantees that finishing the assessment records it —
-    /// the user can't "complete" a RŌS and have it vanish because they didn't
+    /// the user can't "complete" a WCI and have it vanish because they didn't
     /// find a Save button below the fold.
     private func finishAndSave() {
         let i = values[.individual] ?? 5

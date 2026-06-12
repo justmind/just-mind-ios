@@ -2,7 +2,7 @@ import SwiftUI
 
 enum CheckInSection: String, CaseIterable, Identifiable {
     case journal = "Journal"
-    case ros = "RŌS"
+    case ros = "WCI"
     var id: String { rawValue }
 
     /// Backwards-compat alias for callers that still reference `.mood`.

@@ -16,8 +16,12 @@ struct ROSHistoryView: View {
         _mode = State(initialValue: initialMode)
     }
 
+    @Environment(AppPreferences.self) private var prefs
+    @Environment(\.modelContext) private var context
     @Query(sort: \ROSEntry.timestamp, order: .reverse) private var entries: [ROSEntry]
     @State private var mode: Mode
+    @State private var shareItem: ShareItem?
+    @State private var pendingDelete: ROSEntry?
 
     private var orderedAsc: [ROSEntry] { Array(entries.reversed()) }
 
@@ -37,7 +41,7 @@ struct ROSHistoryView: View {
         if entries.isEmpty {
             EmptyStateCard(
                 icon: "chart.xyaxis.line",
-                text: "You haven't completed a RŌS yet. Your first entry creates a baseline so you can track your progress over time."
+                text: "You haven't completed a Wellbeing Check-In yet. Your first entry creates a baseline so you can track your progress over time."
             )
         } else {
             VStack(alignment: .leading, spacing: JMSpacing.l) {
@@ -51,6 +55,8 @@ struct ROSHistoryView: View {
                 }
                 .pickerStyle(.segmented)
 
+                shareButton
+
                 switch mode {
                 case .log:
                     chart
@@ -59,7 +65,49 @@ struct ROSHistoryView: View {
                     ROSTrendsView()
                 }
             }
+            .sheet(item: $shareItem) { ShareSheet(items: [$0.url]) }
+            .confirmationDialog(
+                "Delete this entry?",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) { confirmDelete() }
+                Button("Cancel", role: .cancel) { pendingDelete = nil }
+            } message: {
+                Text("This permanently removes the Wellbeing Check-In from this device.")
+            }
         }
+    }
+
+    private func confirmDelete() {
+        if let entry = pendingDelete {
+            context.delete(entry)
+            try? context.save()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        pendingDelete = nil
+    }
+
+    private var shareButton: some View {
+        Button {
+            if let url = WCIPDFExporter.makePDF(
+                entries: entries,
+                clientName: prefs.preferredName.capitalized
+            ) {
+                shareItem = ShareItem(url: url)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 14, weight: .regular))
+                Text("Share with my therapist (PDF)")
+            }
+        }
+        .buttonStyle(.jmGhost)
+        .accessibilityHint("Creates a PDF of your Wellbeing Check-In history to email or share")
     }
 
     private var chart: some View {
@@ -141,6 +189,14 @@ struct ROSHistoryView: View {
                 .padding(.horizontal, JMSpacing.l)
                 .padding(.vertical, JMSpacing.m)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .contextMenu {
+                    Button(role: .destructive) {
+                        pendingDelete = e
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
                 if idx < entries.count - 1 {
                     JMHairline()
                 }

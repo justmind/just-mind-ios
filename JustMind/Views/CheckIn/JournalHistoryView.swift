@@ -21,9 +21,12 @@ struct JournalHistoryView: View {
         }
     }
 
+    @Environment(\.modelContext) private var context
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var allEntries: [MoodEntry]
     @State private var window: Window = .thirtyDay
     @State private var expanded: Set<UUID> = []
+    @State private var editingEntry: MoodEntry?
+    @State private var pendingDelete: MoodEntry?
 
     private var windowed: [MoodEntry] {
         guard let days = window.days else { return allEntries }
@@ -65,6 +68,29 @@ struct JournalHistoryView: View {
                 }
             }
         }
+        .sheet(item: $editingEntry) { JournalEntryEditorSheet(entry: $0) }
+        .confirmationDialog(
+            "Delete this entry?",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { confirmDelete() }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: {
+            Text("This permanently removes the entry from this device.")
+        }
+    }
+
+    private func confirmDelete() {
+        if let entry = pendingDelete {
+            context.delete(entry)
+            try? context.save()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        pendingDelete = nil
     }
 
     // MARK: Day section
@@ -138,6 +164,18 @@ struct JournalHistoryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                editingEntry = entry
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                pendingDelete = entry
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 
     private func formattedDay(_ d: Date) -> String {
