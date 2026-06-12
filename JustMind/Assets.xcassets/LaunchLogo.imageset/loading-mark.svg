@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!--
+    Loading indicator: a single intentional sage circle.
+    Subtraction over branding — the app announces itself by appearing,
+    not by performing on the launch screen.
+  -->
+  <circle cx="12" cy="12" r="5" fill="#4A7A6B"/>
+</svg>
