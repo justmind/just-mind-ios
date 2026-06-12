@@ -101,29 +101,35 @@ struct JournalView: View {
 
     private var entryField: some View {
         VStack(alignment: .leading, spacing: JMSpacing.s) {
-            // Fixed height + visible indicators: gives the editor a real
-            // scroll region so longer entries scroll within the box (rather
-            // than pushing past entries off the page) and the scroll bar
-            // stays visible while there's overflow.
+            // The editor is a bordered, fixed-height box so it clearly reads
+            // as a contained, scrollable region. Long entries scroll within
+            // the box (with a visible indicator) instead of pushing the past
+            // entries below off the page.
             TextEditor(text: $bodyText)
                 .font(JMFont.body)
                 .lineSpacing(4)
                 .scrollContentBackground(.hidden)
-                .background(JMColor.background)
                 .focused($bodyFocused)
-                .frame(height: 220)
+                .frame(height: 240)
                 .scrollIndicators(.visible)
+                .padding(.horizontal, JMSpacing.m)
+                .padding(.vertical, JMSpacing.s)
+                .background(JMColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous)
+                        .strokeBorder(JMColor.divider, lineWidth: JMHairline.width)
+                )
                 .overlay(alignment: .topLeading) {
                     if bodyText.isEmpty {
                         Text("Write what you'd want to bring to your next session.")
                             .font(JMFont.body)
                             .foregroundStyle(JMColor.textSecondary.opacity(0.55))
-                            .padding(.top, 8)
-                            .padding(.leading, 4)
+                            .padding(.top, JMSpacing.s + 8)
+                            .padding(.leading, JMSpacing.m + 5)
                             .allowsHitTesting(false)
                     }
                 }
-            JMHairline()
             HStack {
                 Text(wordCountLabel)
                     .font(JMFont.caption)

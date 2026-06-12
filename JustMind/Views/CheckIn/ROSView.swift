@@ -16,6 +16,11 @@ struct ROSView: View {
     @State private var values: [ROSItem.Key: Double] = [
         .individual: 5.0, .interpersonal: 5.0, .social: 5.0, .overall: 5.0
     ]
+    // The entry is saved the instant results appear (completing the
+    // assessment = a saved record). We keep its id and the prior total so
+    // the results screen can show the RCI delta and offer a Discard.
+    @State private var savedEntryID: UUID?
+    @State private var previousTotal: Double?
 
     var body: some View {
         ScrollView {
@@ -28,9 +33,9 @@ struct ROSView: View {
                 case .results(let i, let ip, let s, let o):
                     ROSResultsView(
                         individual: i, interpersonal: ip, social: s, overall: o,
-                        previous: entries.first,
-                        onSave: { save(individual: i, interpersonal: ip, social: s, overall: o) },
-                        onDone: { reset() }
+                        previousTotal: previousTotal,
+                        onDone: { reset() },
+                        onDiscard: { discardSaved() }
                     )
                 case .history(let mode):
                     ROSHistoryView(initialMode: mode)
@@ -175,11 +180,7 @@ struct ROSView: View {
                     if idx + 1 < items.count {
                         withAnimation { stage = .item(idx + 1) }
                     } else {
-                        let i = values[.individual] ?? 5
-                        let ip = values[.interpersonal] ?? 5
-                        let s = values[.social] ?? 5
-                        let o = values[.overall] ?? 5
-                        withAnimation { stage = .results(individual: i, interpersonal: ip, social: s, overall: o) }
+                        finishAndSave()
                     }
                 } label: {
                     Text(idx + 1 == items.count ? "See Results" : "Next")
@@ -189,14 +190,44 @@ struct ROSView: View {
         }
     }
 
-    private func save(individual: Double, interpersonal: Double, social: Double, overall: Double) {
-        let entry = ROSEntry(individual: individual, interpersonal: interpersonal, social: social, overall: overall)
+    /// Persist the entry immediately on completing the four items, then show
+    /// results. This guarantees that finishing the assessment records it —
+    /// the user can't "complete" a RŌS and have it vanish because they didn't
+    /// find a Save button below the fold.
+    private func finishAndSave() {
+        let i = values[.individual] ?? 5
+        let ip = values[.interpersonal] ?? 5
+        let s = values[.social] ?? 5
+        let o = values[.overall] ?? 5
+
+        // Capture the prior most-recent total before inserting the new one,
+        // so the results screen can compute the change since last time.
+        previousTotal = entries.first?.total
+
+        let entry = ROSEntry(individual: i, interpersonal: ip, social: s, overall: o)
         context.insert(entry)
         try? context.save()
+        savedEntryID = entry.id
+
         UINotificationFeedbackGenerator().notificationOccurred(.success)
+        withAnimation { stage = .results(individual: i, interpersonal: ip, social: s, overall: o) }
+    }
+
+    /// Remove the auto-saved entry if the user explicitly discards it.
+    private func discardSaved() {
+        if let id = savedEntryID,
+           let entry = entries.first(where: { $0.id == id }) {
+            context.delete(entry)
+            try? context.save()
+        }
+        savedEntryID = nil
+        previousTotal = nil
+        reset()
     }
 
     private func reset() {
+        savedEntryID = nil
+        previousTotal = nil
         stage = .intro
     }
 }

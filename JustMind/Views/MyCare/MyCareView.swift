@@ -170,12 +170,13 @@ struct MyCareView: View {
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Lock with Face ID / Touch ID")
+                        Text("Lock the app")
                             .font(JMFont.body)
                             .foregroundStyle(JMColor.textPrimary)
-                        Text("Require biometrics each time you open the app.")
+                        Text("Require Face ID, Touch ID, or your passcode each time you open Just Mind.")
                             .font(JMFont.caption)
                             .foregroundStyle(JMColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(

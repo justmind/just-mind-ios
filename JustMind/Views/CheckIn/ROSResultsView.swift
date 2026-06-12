@@ -5,28 +5,32 @@ struct ROSResultsView: View {
     let interpersonal: Double
     let social: Double
     let overall: Double
-    let previous: ROSEntry?
-    let onSave: () -> Void
+    let previousTotal: Double?
     let onDone: () -> Void
-
-    @State private var saved: Bool = false
+    let onDiscard: () -> Void
 
     private var total: Double { individual + interpersonal + social + overall }
 
     private var rciDelta: Double? {
-        guard let prev = previous else { return nil }
-        return total - prev.total
+        guard let prev = previousTotal else { return nil }
+        return total - prev
     }
 
     private var aboveCutoff: Bool { total >= ROSEntry.clinicalCutoffAdult }
 
     var body: some View {
         VStack(spacing: JMSpacing.xl) {
-            Text("Your RŌS Score")
-                .font(JMFont.footnote)
-                .foregroundStyle(JMColor.textSecondary)
-                .tracking(1.5)
-                .textCase(.uppercase)
+            // The entry is already saved by the time this screen appears.
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(JMColor.success)
+                Text("Saved to your history")
+                    .font(JMFont.footnote)
+                    .foregroundStyle(JMColor.textSecondary)
+                    .tracking(1)
+                    .textCase(.uppercase)
+            }
 
             ScoreArc(total: total)
                 .frame(width: 240, height: 240)
@@ -41,18 +45,15 @@ struct ROSResultsView: View {
 
             disclaimer
 
-            HStack(spacing: JMSpacing.m) {
+            VStack(spacing: JMSpacing.m) {
                 Button {
                     onDone()
-                } label: { Text(saved ? "Done" : "Discard") }
-                    .buttonStyle(.jmOutline)
-                if !saved {
-                    Button {
-                        onSave()
-                        saved = true
-                    } label: { Text("Save") }
-                        .buttonStyle(.jmPrimary)
-                }
+                } label: { Text("Done") }
+                    .buttonStyle(.jmPrimary)
+                Button {
+                    onDiscard()
+                } label: { Text("Discard this entry") }
+                    .buttonStyle(.jmGhost)
             }
         }
     }
