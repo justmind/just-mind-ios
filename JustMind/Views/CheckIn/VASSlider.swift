@@ -7,6 +7,8 @@ struct VASSlider: View {
     var range: ClosedRange<Double> = 0.0...10.0
     var leftLabel: String
     var rightLabel: String
+    /// Original clinical domain name, surfaced to VoiceOver users.
+    var accessibilityHint: String? = nil
 
     private let handleSize: CGFloat = 28
     private let trackHeight: CGFloat = 6
@@ -49,6 +51,7 @@ struct VASSlider: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Visual rating slider, \(leftLabel) to \(rightLabel)")
                 .accessibilityValue(String(format: "%.1f out of 10", value))
+                .accessibilityHint(accessibilityHint ?? "")
                 .accessibilityAdjustableAction { direction in
                     switch direction {
                     case .increment: value = min(range.upperBound, ((value + 0.5) * 10).rounded() / 10)

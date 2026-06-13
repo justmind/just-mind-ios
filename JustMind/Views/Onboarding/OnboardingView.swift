@@ -126,6 +126,12 @@ struct OnboardingView: View {
             Button("Get Started") {
                 let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
                 prefs.preferredName = trimmed.isEmpty ? "friend" : trimmed
+                // Ask for notification permission here (after the name), not at
+                // launch. If denied, the weekly nudge simply never schedules.
+                Task {
+                    await CheckInReminders.requestAuthorization()
+                    await CheckInReminders.refreshSchedule()
+                }
                 prefs.onboardingComplete = true
             }
             .buttonStyle(.jmPrimary)

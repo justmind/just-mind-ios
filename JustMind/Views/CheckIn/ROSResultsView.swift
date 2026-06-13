@@ -6,10 +6,17 @@ struct ROSResultsView: View {
     let social: Double
     let overall: Double
     let previousTotal: Double?
-    let onDone: () -> Void
+    /// Receives the optional reflection note (nil if skipped). (Change 2.)
+    let onDone: (String?) -> Void
     let onDiscard: () -> Void
 
     @State private var showCrisis: Bool = false
+    @State private var reflectionNote: String = ""
+    @State private var showLowScoreSupport: Bool = false
+
+    private let reflectionLimit = 500
+    private let lowScoreThreshold: Double = 10
+    private static let safetyPromptKey = "ros_safety_prompt_last_shown"
 
     private var total: Double { individual + interpersonal + social + overall }
 
@@ -49,11 +56,14 @@ struct ROSResultsView: View {
                 rciCard(delta: delta)
             }
 
+            reflectionField
+
             disclaimer
 
             VStack(spacing: JMSpacing.m) {
                 Button {
-                    onDone()
+                    let trimmed = reflectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
+                    onDone(trimmed.isEmpty ? nil : trimmed)
                 } label: { Text("Done") }
                     .buttonStyle(.jmPrimary)
                 Button {
@@ -63,6 +73,74 @@ struct ROSResultsView: View {
             }
         }
         .sheet(isPresented: $showCrisis) { CrisisResourcesView() }
+        .sheet(isPresented: $showLowScoreSupport) { LowScoreSupportSheet() }
+        .onAppear { maybeShowLowScoreSupport() }
+    }
+
+    /// Optional free-text reflection, shown below the score summary. (Change 2.)
+    private var reflectionField: some View {
+        VStack(alignment: .leading, spacing: JMSpacing.s) {
+            Text("Your note (optional)")
+                .font(JMFont.sectionLabel)
+                .foregroundStyle(JMColor.textSecondary)
+                .tracking(0.96)
+                .textCase(.uppercase)
+            Text("What's been most on your mind this week?")
+                .font(JMFont.bodyEmph)
+                .foregroundStyle(JMColor.textPrimary)
+            TextEditor(text: $reflectionNote)
+                .font(JMFont.body)
+                .lineSpacing(3)
+                .scrollContentBackground(.hidden)
+                .frame(height: 110)
+                .overlay(alignment: .topLeading) {
+                    if reflectionNote.isEmpty {
+                        Text("You don't have to have it all figured out. Just write what comes up.")
+                            .font(JMFont.body)
+                            .foregroundStyle(JMColor.textSecondary.opacity(0.55))
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .onChange(of: reflectionNote) { _, newValue in
+                    if newValue.count > reflectionLimit {
+                        reflectionNote = String(newValue.prefix(reflectionLimit))
+                    }
+                }
+            HStack {
+                Spacer()
+                Text("\(reflectionNote.count)/\(reflectionLimit)")
+                    .font(JMFont.caption)
+                    .foregroundStyle(JMColor.textSecondary.opacity(0.7))
+                    .monospacedDigit()
+            }
+        }
+        .padding(JMSpacing.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(JMColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous)
+                .strokeBorder(JMColor.divider, lineWidth: JMHairline.width)
+        )
+    }
+
+    /// Present the supportive sheet once per calendar day when the total is
+    /// very low. (Change 3.)
+    private func maybeShowLowScoreSupport() {
+        guard total <= lowScoreThreshold else { return }
+        let d = UserDefaults.standard
+        let today = Calendar.current.startOfDay(for: .now)
+        if let last = d.object(forKey: Self.safetyPromptKey) as? Date,
+           Calendar.current.isDate(last, inSameDayAs: today) {
+            return // already shown today
+        }
+        d.set(today, forKey: Self.safetyPromptKey)
+        // Slight delay so it doesn't fight the results screen's entrance.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            showLowScoreSupport = true
+        }
     }
 
     /// Gentle, non-alarmist offer of crisis resources when the score is below
@@ -103,13 +181,13 @@ struct ROSResultsView: View {
 
     private var scoreBreakdown: some View {
         VStack(spacing: 0) {
-            row("Individual", individual)
+            row("How I'm feeling inside", individual)
             JMHairline()
-            row("Interpersonal", interpersonal)
+            row("My close relationships", interpersonal)
             JMHairline()
-            row("Social / Role", social)
+            row("Work, school & daily life", social)
             JMHairline()
-            row("Overall", overall)
+            row("Life in general", overall)
         }
         .frame(maxWidth: .infinity)
         .jmQuietCardFlush()

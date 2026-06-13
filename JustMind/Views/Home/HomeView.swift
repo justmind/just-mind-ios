@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Charts
 
 struct HomeView: View {
     @Environment(AppPreferences.self) private var prefs
@@ -10,8 +11,13 @@ struct HomeView: View {
     @State private var showSessionPrep: Bool = false
     @State private var cardsAppeared: [Bool] = []
     @State private var displayedQuote: String = QuoteService.quoteForToday()
+    @State private var allianceScore: Double = 5.0
+    @State private var allianceDismissed: Bool = false
 
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var moods: [MoodEntry]
+    @Query(sort: \SessionAllianceEntry.date, order: .reverse) private var allianceEntries: [SessionAllianceEntry]
+
+    private static let allianceHandledKey = "ros_alliance_handled_appointment"
 
     private var todayMood: MoodEntry? {
         moods.first(where: { Calendar.current.isDateInToday($0.timestamp) })
@@ -35,7 +41,13 @@ struct HomeView: View {
     /// so each row fades up sequentially regardless of conditional inclusion.
     private var cards: [(id: String, view: AnyView)] {
         var items: [(id: String, view: AnyView)] = []
+        if showAllianceCard {
+            items.append(("alliance", AnyView(allianceInputCard)))
+        }
         items.append(("mood", AnyView(moodSummaryCard)))
+        if allianceEntries.count >= 2 {
+            items.append(("allianceTrend", AnyView(allianceSparkline)))
+        }
         items.append(("quickActions", AnyView(quickActions)))
         if let appt = prefs.nextAppointment, appt.timeIntervalSinceNow > 0,
            appt.timeIntervalSinceNow < 72 * 3600 {
@@ -43,6 +55,99 @@ struct HomeView: View {
         }
         items.append(("quote", AnyView(quoteCard)))
         return items
+    }
+
+    // MARK: Session alliance (Change 5)
+
+    /// True only within 4 hours after the entered appointment time, and only
+    /// if we haven't already handled (saved or skipped) this appointment.
+    private var showAllianceCard: Bool {
+        guard !allianceDismissed, let appt = prefs.nextAppointment else { return false }
+        let now = Date()
+        guard now >= appt, now <= appt.addingTimeInterval(4 * 3600) else { return false }
+        if let handled = UserDefaults.standard.object(forKey: Self.allianceHandledKey) as? Date,
+           abs(handled.timeIntervalSince(appt)) < 1 {
+            return false
+        }
+        return true
+    }
+
+    private func markAllianceHandled() {
+        if let appt = prefs.nextAppointment {
+            UserDefaults.standard.set(appt, forKey: Self.allianceHandledKey)
+        }
+        allianceDismissed = true
+    }
+
+    private var allianceInputCard: some View {
+        VStack(alignment: .leading, spacing: JMSpacing.m) {
+            Text("Today's session")
+                .font(JMFont.sectionLabel)
+                .foregroundStyle(JMColor.textSecondary)
+                .tracking(0.96)
+                .textCase(.uppercase)
+            Text("How did your session go?")
+                .font(JMFont.headline)
+                .foregroundStyle(JMColor.textPrimary)
+
+            VASSlider(
+                value: $allianceScore,
+                leftLabel: "Didn't fit what I needed",
+                rightLabel: "Fit perfectly",
+                accessibilityHint: "Session fit, 0 to 10"
+            )
+
+            HStack(spacing: JMSpacing.m) {
+                Button("Skip") {
+                    withAnimation { markAllianceHandled() }
+                }
+                .buttonStyle(.jmGhost)
+                Button("Save") {
+                    let entry = SessionAllianceEntry(score: allianceScore)
+                    context.insert(entry)
+                    try? context.save()
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation { markAllianceHandled() }
+                }
+                .buttonStyle(.jmPrimary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .jmQuietCard()
+    }
+
+    private var allianceSparkline: some View {
+        let recent = Array(allianceEntries.prefix(8)).reversed()
+        return VStack(alignment: .leading, spacing: JMSpacing.s) {
+            Text("Session fit over time")
+                .font(JMFont.sectionLabel)
+                .foregroundStyle(JMColor.textSecondary)
+                .tracking(0.96)
+                .textCase(.uppercase)
+            Chart {
+                ForEach(Array(recent.enumerated()), id: \.element.id) { _, e in
+                    LineMark(
+                        x: .value("Date", e.date),
+                        y: .value("Fit", e.score)
+                    )
+                    .interpolationMethod(.monotone)
+                    .foregroundStyle(JMColor.primary)
+                    .lineStyle(StrokeStyle(lineWidth: 1.75, lineCap: .round))
+                    PointMark(
+                        x: .value("Date", e.date),
+                        y: .value("Fit", e.score)
+                    )
+                    .foregroundStyle(JMColor.primary)
+                    .symbolSize(24)
+                }
+            }
+            .chartYScale(domain: 0...10)
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .frame(height: 56)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .jmQuietCard()
     }
 
     var body: some View {
@@ -91,7 +196,9 @@ struct HomeView: View {
     // MARK: Stagger animation
 
     private func appearanceState(_ idx: Int) -> Bool {
-        idx < cardsAppeared.count ? cardsAppeared[idx] : false
+        // Cards added after the initial stagger (e.g. the alliance card or its
+        // sparkline appearing mid-session) just show, rather than staying hidden.
+        idx < cardsAppeared.count ? cardsAppeared[idx] : true
     }
 
     private func animateEntry() {

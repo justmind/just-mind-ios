@@ -34,7 +34,7 @@ struct ROSView: View {
                     ROSResultsView(
                         individual: i, interpersonal: ip, social: s, overall: o,
                         previousTotal: previousTotal,
-                        onDone: { reset() },
+                        onDone: { note in attachReflection(note); reset() },
                         onDiscard: { discardSaved() }
                     )
                 case .history(let mode):
@@ -160,7 +160,8 @@ struct ROSView: View {
             VASSlider(
                 value: valueBinding,
                 leftLabel: item.leftLabel,
-                rightLabel: item.rightLabel
+                rightLabel: item.rightLabel,
+                accessibilityHint: "Domain: \(item.clinicalName)"
             )
             .padding(.top, JMSpacing.l)
             .padding(JMSpacing.l)
@@ -209,8 +210,21 @@ struct ROSView: View {
         try? context.save()
         savedEntryID = entry.id
 
+        // Record completion and (re)schedule the weekly check-in nudge so it
+        // only fires when the user hasn't checked in for a week. (Change 4.)
+        CheckInReminders.recordCompletion(.now)
+
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         withAnimation { stage = .results(individual: i, interpersonal: ip, social: s, overall: o) }
+    }
+
+    /// Attach the optional reflection note to the saved entry. (Change 2.)
+    private func attachReflection(_ note: String?) {
+        if let id = savedEntryID,
+           let entry = entries.first(where: { $0.id == id }) {
+            entry.reflectionNote = note
+            try? context.save()
+        }
     }
 
     /// Remove the auto-saved entry if the user explicitly discards it.

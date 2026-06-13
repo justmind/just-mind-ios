@@ -15,6 +15,7 @@ struct RootView: View {
     // Guards against the FaceID system sheet (which briefly backgrounds the
     // app) re-triggering the lock / a second prompt while we're mid-auth.
     @State private var isAuthenticating: Bool = false
+    @State private var showSplash: Bool = true
 
     var body: some View {
         ZStack {
@@ -37,19 +38,39 @@ struct RootView: View {
             if scenePhase != .active && prefs.onboardingComplete {
                 PrivacyCover()
             }
+
+            // Cold-launch splash sits above everything until it fades out.
+            if showSplash {
+                LaunchSplashView()
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: prefs.onboardingComplete)
         .animation(.easeInOut(duration: 0.2), value: locked)
         .onChange(of: scenePhase) { _, phase in
             handleScene(phase)
         }
+        // Deep-link from the weekly check-in notification → WCI section.
+        .onReceive(NotificationCenter.default.publisher(for: .jmOpenWCI)) { _ in
+            selectedTab = .checkIn
+            checkInSection = .ros
+        }
         .task {
-            // Trigger biometrics on cold launch if enabled.
+            // Cover content beneath the splash if the app will lock, so the
+            // unlock prompt doesn't flash content while the splash fades.
+            if prefs.appLockEnabled { locked = true }
+            try? await Task.sleep(for: .seconds(1.3))
+            withAnimation(.easeInOut(duration: 0.4)) { showSplash = false }
+
+            // Run biometrics on cold launch after the splash, if enabled.
             if prefs.appLockEnabled, !didInitialAuth {
-                locked = true
                 await unlock()
             }
             didInitialAuth = true
+
+            // Keep the weekly check-in nudge current with the latest data.
+            await CheckInReminders.refreshSchedule()
         }
     }
 

@@ -112,17 +112,27 @@ struct ROSHistoryView: View {
 
     private var chart: some View {
         VStack(alignment: .leading, spacing: JMSpacing.s) {
-            Text("Total over time")
+            Text("Your Well-Being Over Time")
                 .font(JMFont.footnote)
                 .foregroundStyle(JMColor.textSecondary)
                 .tracking(1)
                 .textCase(.uppercase)
             Chart {
-                RuleMark(y: .value("Cutoff", ROSEntry.clinicalCutoffAdult))
+                // Community-sample midpoint from the RŌS validation study.
+                RuleMark(y: .value("Community average", ROSEntry.communityAverage))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .foregroundStyle(JMColor.warning.opacity(0.6))
+                    .foregroundStyle(JMColor.textSecondary.opacity(0.5))
                     .annotation(position: .topTrailing, alignment: .trailing) {
-                        Text("Cutoff")
+                        Text("Community average")
+                            .font(JMFont.caption)
+                            .foregroundStyle(JMColor.textSecondary)
+                    }
+                // Gentle, non-alarming "reach out" reference (muted amber).
+                RuleMark(y: .value("Check in with your therapist", 10))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .foregroundStyle(JMColor.warning.opacity(0.55))
+                    .annotation(position: .bottomTrailing, alignment: .trailing) {
+                        Text("Check in with your therapist")
                             .font(JMFont.caption)
                             .foregroundStyle(JMColor.warning)
                     }
