@@ -29,12 +29,14 @@ struct OnboardingView: View {
     private var welcomeCard: some View {
         VStack(alignment: .leading, spacing: JMSpacing.l) {
             Spacer()
-            // Width-constrained: the tagline lockup is wider than tall.
-            Image("LogoMark")
+            // Same green JM mark as the splash / Home, centered (the headline
+            // VStack is leading-aligned, so the logo is centered explicitly).
+            Image("LogoSquareMark")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 220, maxHeight: 80)
-                .foregroundStyle(JMColor.textPrimary)
+                .frame(width: 84, height: 84)
+                .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, JMSpacing.s)
             Text("Your therapy,\nsupported between\nsessions.")
                 .font(JMFont.display)
