@@ -9,11 +9,14 @@ struct LaunchSplashView: View {
         ZStack {
             JMColor.background.ignoresSafeArea()
             VStack(spacing: JMSpacing.l) {
-                Image("LogoMark")
+                // Same green JM mark shown at the top of the Home screen,
+                // clipped to the home-screen-icon squircle (full-color art,
+                // so it is not tinted).
+                Image("LogoSquareMark")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 160, maxHeight: 52)
-                    .foregroundStyle(JMColor.textPrimary)
+                    .frame(width: 84, height: 84)
+                    .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
                     .padding(.bottom, JMSpacing.s)
 
                 ProgressDots()
