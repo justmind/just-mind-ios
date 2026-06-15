@@ -23,7 +23,7 @@ targets:
           - "**/*.md"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: org.justmind.companion
+        PRODUCT_BUNDLE_IDENTIFIER: org.justmind.clientapp
         PRODUCT_NAME: Just Mind
         PRODUCT_MODULE_NAME: JustMind
         MARKETING_VERSION: "1.0.0"
@@ -53,6 +53,6 @@ targets:
       - target: JustMind
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: org.justmind.companion.tests
+        PRODUCT_BUNDLE_IDENTIFIER: org.justmind.clientapp.tests
         GENERATE_INFOPLIST_FILE: YES
         TARGETED_DEVICE_FAMILY: "1,2"
