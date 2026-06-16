@@ -412,7 +412,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.clientapp.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.companion.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JustMind.app/JustMind";
@@ -490,7 +490,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.clientapp.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.companion.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JustMind.app/JustMind";
@@ -515,7 +515,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.clientapp;
+				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.companion;
 				PRODUCT_MODULE_NAME = JustMind;
 				PRODUCT_NAME = "Just Mind";
 				SDKROOT = iphoneos;
@@ -545,7 +545,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.clientapp;
+				PRODUCT_BUNDLE_IDENTIFIER = org.justmind.companion;
 				PRODUCT_MODULE_NAME = JustMind;
 				PRODUCT_NAME = "Just Mind";
 				SDKROOT = iphoneos;
