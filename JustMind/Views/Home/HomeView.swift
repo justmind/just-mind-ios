@@ -10,7 +10,6 @@ struct HomeView: View {
     @State private var safariItem: SafariSheetItem?
     @State private var showSessionPrep: Bool = false
     @State private var cardsAppeared: [Bool] = []
-    @State private var displayedQuote: String = QuoteService.quoteForToday()
     @State private var allianceScore: Double = 5.0
     @State private var allianceDismissed: Bool = false
     @State private var featuredPost: BlogPost?
@@ -62,7 +61,6 @@ struct HomeView: View {
         if let post = featuredPost {
             items.append(("featuredBlog", AnyView(featuredBlogCard(post))))
         }
-        items.append(("quote", AnyView(quoteCard)))
         return items
     }
 
@@ -384,30 +382,6 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    /// Quote card: a moment of stillness. No card chrome, no border, no shadow.
-    /// Sits flush on the background. Italic body, slow fades.
-    private var quoteCard: some View {
-        VStack(alignment: .leading, spacing: JMSpacing.s) {
-            Text(displayedQuote)
-                .font(.system(size: 16, weight: .regular).italic())
-                .foregroundStyle(JMColor.textPrimary)
-                .lineSpacing(16 * 0.6) // ~line-height 1.6 for 16pt
-                .fixedSize(horizontal: false, vertical: true)
-                .id(displayedQuote)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.6), value: displayedQuote)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, JMSpacing.cardV)
-        .padding(.horizontal, 0) // flush with background, no border
-        .onAppear {
-            // Refresh the quote (with a slow fade) when the view shows up.
-            let next = QuoteService.quoteForToday()
-            if next != displayedQuote {
-                withAnimation { displayedQuote = next }
-            }
-        }
-    }
 
     private func appointmentCard(date: Date) -> some View {
         let f = DateFormatter()
