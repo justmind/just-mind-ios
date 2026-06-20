@@ -10,7 +10,6 @@ enum JournalPrompts {
         "Name one thing you're carrying. Just naming it is enough.",
         "What did you almost say today, but didn't?",
         "Who or what made today feel a little easier?",
-        "What's the smallest version of the truth you could tell?",
         "When thinking about recent events, what went well and what was a challenge?",
         "What did you need today that you didn't get?",
         "What did you give yourself today?",
