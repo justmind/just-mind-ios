@@ -11,7 +11,7 @@ enum JournalPrompts {
         "What did you almost say today, but didn't?",
         "Who or what made today feel a little easier?",
         "What's the smallest version of the truth you could tell?",
-        "If today had a weather pattern, what would it be?",
+        "When thinking about recent events, what went well and what was a challenge?",
         "What did you need today that you didn't get?",
         "What did you give yourself today?",
         "What's one thing you'd like to bring to your next session?",
