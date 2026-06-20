@@ -14,7 +14,6 @@ struct MyCareView: View {
     @State private var showCrisis: Bool = false
     @State private var showBlogTopics: Bool = false
 
-    private let portalURL = URL(string: "https://justmind.intakeq.com/portal")!
     private let privacyURL = URL(string: "https://justmind.org/privacy-policy/")!
     private let websiteURL = URL(string: "https://justmind.org/")!
 
@@ -23,15 +22,6 @@ struct MyCareView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: JMSpacing.xl) {
                     crisisRow
-                    section(title: "Portal") {
-                        VStack(alignment: .leading, spacing: JMSpacing.s) {
-                            portalCards
-                            Text("For scheduling questions, it's best to email your therapist directly.")
-                                .font(JMFont.caption)
-                                .foregroundStyle(JMColor.textSecondary)
-                                .padding(.horizontal, JMSpacing.xs)
-                        }
-                    }
                     section(title: "Settings") {
                         settings
                     }
@@ -105,53 +95,6 @@ struct MyCareView: View {
                 .strokeBorder(JMColor.warning.opacity(0.25), lineWidth: JMHairline.width)
         )
         .accessibilityHint("Opens crisis support resources")
-    }
-
-    // MARK: Portal cards
-
-    private var portalCards: some View {
-        VStack(spacing: 0) {
-            portalRow(icon: "message", title: "Message my therapist", subtitle: "Send a secure message")
-            JMHairline()
-            portalRow(icon: "doc.text", title: "Invoices & billing", subtitle: "Access your statements")
-            JMHairline()
-            portalRow(icon: "creditcard", title: "Payment method", subtitle: "Manage your card on file")
-        }
-        .jmQuietCardFlush()
-    }
-
-    private func portalRow(icon: String, title: String, subtitle: String) -> some View {
-        Button {
-            // Only fire success haptic for the messaging action, per spec.
-            if title.lowercased().contains("message") {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-            }
-            safariItem = SafariSheetItem(url: portalURL)
-        } label: {
-            HStack(spacing: JMSpacing.l) {
-                // Icon foreground neutralized — green is reserved for primary CTAs.
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .light))
-                    .foregroundStyle(JMColor.textSecondary)
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(JMFont.body)
-                        .foregroundStyle(JMColor.textPrimary)
-                    Text(subtitle)
-                        .font(JMFont.caption)
-                        .foregroundStyle(JMColor.textSecondary)
-                }
-                Spacer()
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(JMColor.textSecondary.opacity(0.7))
-            }
-            .padding(.horizontal, JMSpacing.l)
-            .padding(.vertical, JMSpacing.cardV)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     private var blogTopicsSummary: String {

@@ -13,6 +13,8 @@ struct HomeView: View {
     @State private var allianceScore: Double = 5.0
     @State private var allianceDismissed: Bool = false
 
+    private let portalURL = URL(string: "https://justmind.intakeq.com/portal")!
+
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var moods: [MoodEntry]
     @Query(sort: \SessionAllianceEntry.date, order: .reverse) private var allianceEntries: [SessionAllianceEntry]
     @Query(sort: \ROSEntry.timestamp, order: .reverse) private var wciEntries: [ROSEntry]
@@ -282,19 +284,34 @@ struct HomeView: View {
     }
 
     private var quickActions: some View {
-        VStack(spacing: 0) {
-            // "Write today's entry" lives on the TODAY card above, so it's not
-            // repeated here.
-            quickActionRow(systemImage: "list.bullet", title: "Complete WCI") {
-                selectedTab = .checkIn; checkInSection = .ros
+        VStack(alignment: .leading, spacing: JMSpacing.s) {
+            VStack(spacing: 0) {
+                // "Write today's entry" lives on the TODAY card above, so it's
+                // not repeated here.
+                quickActionRow(systemImage: "list.bullet", title: "Complete WCI") {
+                    selectedTab = .checkIn; checkInSection = .ros
+                }
+                JMHairline()
+                quickActionRow(systemImage: "message", title: "Message my therapist") {
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    safariItem = SafariSheetItem(url: portalURL)
+                }
+                JMHairline()
+                quickActionRow(systemImage: "doc.text", title: "Invoices & billing") {
+                    safariItem = SafariSheetItem(url: portalURL)
+                }
+                JMHairline()
+                quickActionRow(systemImage: "creditcard", title: "Payment method") {
+                    safariItem = SafariSheetItem(url: portalURL)
+                }
             }
-            JMHairline()
-            quickActionRow(systemImage: "message", title: "Message my therapist") {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                safariItem = SafariSheetItem(url: URL(string: "https://justmind.intakeq.com/portal")!)
-            }
+            .jmQuietCardFlush()
+
+            Text("For scheduling questions, it's best to email your therapist directly.")
+                .font(JMFont.caption)
+                .foregroundStyle(JMColor.textSecondary)
+                .padding(.horizontal, JMSpacing.xs)
         }
-        .jmQuietCardFlush()
     }
 
     private func quickActionRow(systemImage: String, title: String, action: @escaping () -> Void) -> some View {
