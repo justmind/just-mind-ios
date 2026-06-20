@@ -4,7 +4,10 @@ struct OnboardingView: View {
     @Environment(AppPreferences.self) private var prefs
     @State private var page: Int = 0
     @State private var draftName: String = ""
+    @State private var selectedTopics: Set<String> = []
     @FocusState private var nameFocused: Bool
+
+    private let pageCount = 4
 
     var body: some View {
         ZStack {
@@ -13,7 +16,8 @@ struct OnboardingView: View {
                 TabView(selection: $page) {
                     welcomeCard.tag(0)
                     featuresCard.tag(1)
-                    nameCard.tag(2)
+                    topicsCard.tag(2)
+                    nameCard.tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .indexViewStyle(.page(backgroundDisplayMode: .never))
@@ -102,6 +106,35 @@ struct OnboardingView: View {
         .padding(.vertical, JMSpacing.m)
     }
 
+    private var topicsCard: some View {
+        VStack(alignment: .leading, spacing: JMSpacing.l) {
+            Spacer()
+            Text("What's on\nyour mind?")
+                .font(JMFont.display)
+                .jmDisplayTracking()
+                .foregroundStyle(JMColor.textPrimary)
+                .lineSpacing(2)
+            Text("Pick a few topics and we'll bring the most relevant Just Mind articles to you. You can change this anytime.")
+                .font(JMFont.body)
+                .foregroundStyle(JMColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            FlowChips(
+                topics: BlogService.curatedTagSlugs.map(\.label),
+                selected: $selectedTopics
+            )
+            .padding(.top, JMSpacing.s)
+
+            Spacer()
+            Button(selectedTopics.isEmpty ? "Skip for now" : "Continue") {
+                withAnimation { page = 3 }
+            }
+            .buttonStyle(.jmPrimary)
+        }
+        .padding(.horizontal, JMSpacing.xl)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var nameCard: some View {
         VStack(alignment: .leading, spacing: JMSpacing.l) {
             Spacer()
@@ -128,6 +161,9 @@ struct OnboardingView: View {
             Button("Get Started") {
                 let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
                 prefs.preferredName = trimmed.isEmpty ? "friend" : trimmed
+                prefs.preferredBlogTopics = BlogService.curatedTagSlugs
+                    .map(\.label)
+                    .filter { selectedTopics.contains($0) } // preserve curated order
                 // Ask for notification permission here (after the name), not at
                 // launch. If denied, the weekly nudge simply never schedules.
                 Task {
@@ -147,11 +183,44 @@ struct OnboardingView: View {
 
     private var pageDots: some View {
         HStack(spacing: 6) {
-            ForEach(0..<3, id: \.self) { i in
+            ForEach(0..<pageCount, id: \.self) { i in
                 Capsule()
                     .fill(i == page ? JMColor.textPrimary : JMColor.divider)
                     .frame(width: i == page ? 18 : 6, height: 6)
                     .animation(.easeInOut(duration: 0.2), value: page)
+            }
+        }
+    }
+}
+
+/// A wrapping row of selectable topic chips.
+private struct FlowChips: View {
+    let topics: [String]
+    @Binding var selected: Set<String>
+
+    private let columns = [GridItem(.adaptive(minimum: 110), spacing: 10, alignment: .leading)]
+
+    var body: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+            ForEach(topics, id: \.self) { topic in
+                let isOn = selected.contains(topic)
+                Button {
+                    if isOn { selected.remove(topic) } else { selected.insert(topic) }
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } label: {
+                    Text(topic)
+                        .font(JMFont.callout)
+                        .foregroundStyle(isOn ? .white : JMColor.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(isOn ? JMColor.primary : Color.clear)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().strokeBorder(isOn ? Color.clear : JMColor.divider, lineWidth: JMHairline.width)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isOn ? [.isSelected] : [])
             }
         }
     }

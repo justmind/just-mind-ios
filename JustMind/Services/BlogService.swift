@@ -69,6 +69,30 @@ actor BlogService {
         }
     }
 
+    /// Resolve curated topic labels (e.g. "Anxiety") to the live tag IDs they
+    /// map to, given a fetched tag list. Empty labels → empty (means "all").
+    static func tagIDs(forTopicLabels labels: [String], in tags: [BlogTag]) -> [Int] {
+        guard !labels.isEmpty else { return [] }
+        let slugs = Set(curatedTagSlugs.filter { labels.contains($0.label) }.flatMap { $0.slugs })
+        return tags.filter { slugs.contains($0.slug) }.map { $0.id }
+    }
+
+    /// The most recent post matching the user's chosen topics — for the Home
+    /// featured card. Falls back to newest-overall if no topics are set.
+    func featuredPost(forTopicLabels labels: [String]) async -> BlogPost? {
+        do {
+            var ids: [Int] = []
+            if !labels.isEmpty {
+                let tags = try await fetchTags()
+                ids = Self.tagIDs(forTopicLabels: labels, in: tags)
+            }
+            let posts = try await fetchPosts(tagIDs: ids, page: 1, perPage: 1)
+            return posts.first
+        } catch {
+            return nil
+        }
+    }
+
     func fetchPosts(tagIDs: [Int] = [], page: Int = 1, perPage: Int = 20) async throws -> [BlogPost] {
         var components = URLComponents(url: baseURL.appendingPathComponent("posts"), resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = [

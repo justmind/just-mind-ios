@@ -7,6 +7,7 @@ enum UserPreferences {
         static let preferredName = "jm.preferredName"
         static let appLockEnabled = "jm.appLockEnabled"
         static let nextAppointment = "jm.nextAppointment"
+        static let preferredBlogTopics = "jm.preferredBlogTopics"
     }
 }
 
@@ -40,12 +41,19 @@ final class AppPreferences {
             }
         }
     }
+    /// Curated blog topic labels the user chose during onboarding (e.g.
+    /// "Anxiety", "Parenting"). Empty = show everything.
+    var preferredBlogTopics: [String] {
+        didSet { UserDefaults.standard.set(preferredBlogTopics, forKey: UserPreferences.Keys.preferredBlogTopics) }
+    }
+
     init() {
         let d = UserDefaults.standard
         self.preferredName = d.string(forKey: UserPreferences.Keys.preferredName) ?? ""
         self.onboardingComplete = d.bool(forKey: UserPreferences.Keys.onboardingComplete)
         self.appLockEnabled = d.bool(forKey: UserPreferences.Keys.appLockEnabled)
         self.nextAppointment = d.object(forKey: UserPreferences.Keys.nextAppointment) as? Date
+        self.preferredBlogTopics = d.stringArray(forKey: UserPreferences.Keys.preferredBlogTopics) ?? []
     }
 
     func resetAll() {
@@ -54,7 +62,8 @@ final class AppPreferences {
             UserPreferences.Keys.onboardingComplete,
             UserPreferences.Keys.preferredName,
             UserPreferences.Keys.appLockEnabled,
-            UserPreferences.Keys.nextAppointment
+            UserPreferences.Keys.nextAppointment,
+            UserPreferences.Keys.preferredBlogTopics
         ] {
             d.removeObject(forKey: key)
         }
@@ -62,5 +71,6 @@ final class AppPreferences {
         onboardingComplete = false
         appLockEnabled = false
         nextAppointment = nil
+        preferredBlogTopics = []
     }
 }

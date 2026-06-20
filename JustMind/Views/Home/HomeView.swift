@@ -13,9 +13,12 @@ struct HomeView: View {
     @State private var displayedQuote: String = QuoteService.quoteForToday()
     @State private var allianceScore: Double = 5.0
     @State private var allianceDismissed: Bool = false
+    @State private var featuredPost: BlogPost?
+    @State private var didLoadFeatured: Bool = false
 
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var moods: [MoodEntry]
     @Query(sort: \SessionAllianceEntry.date, order: .reverse) private var allianceEntries: [SessionAllianceEntry]
+    @Query(sort: \ROSEntry.timestamp, order: .reverse) private var wciEntries: [ROSEntry]
 
     private static let allianceHandledKey = "ros_alliance_handled_appointment"
 
@@ -45,16 +48,93 @@ struct HomeView: View {
             items.append(("alliance", AnyView(allianceInputCard)))
         }
         items.append(("mood", AnyView(moodSummaryCard)))
+        items.append(("quickActions", AnyView(quickActions)))
+        if wciEntries.count >= 2 {
+            items.append(("wciTrend", AnyView(wciTrendCard)))
+        }
         if allianceEntries.count >= 2 {
             items.append(("allianceTrend", AnyView(allianceSparkline)))
         }
-        items.append(("quickActions", AnyView(quickActions)))
         if let appt = prefs.nextAppointment, appt.timeIntervalSinceNow > 0,
            appt.timeIntervalSinceNow < 72 * 3600 {
             items.append(("appointment", AnyView(appointmentCard(date: appt))))
         }
+        if let post = featuredPost {
+            items.append(("featuredBlog", AnyView(featuredBlogCard(post))))
+        }
         items.append(("quote", AnyView(quoteCard)))
         return items
+    }
+
+    // MARK: Wellbeing trend snapshot
+
+    private var wciTrendCard: some View {
+        Button {
+            selectedTab = .checkIn
+            checkInSection = .ros
+        } label: {
+            ROSTrendsSnapshot(entries: Array(wciEntries))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens your Wellbeing Check-In trends")
+    }
+
+    // MARK: Featured blog article
+
+    private func featuredBlogCard(_ post: BlogPost) -> some View {
+        Button {
+            if let url = URL(string: post.url) {
+                safariItem = SafariSheetItem(url: url)
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                if let urlStr = post.imageURL, let url = URL(string: urlStr) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        case .empty: Rectangle().fill(JMColor.divider).overlay(ProgressView())
+                        default: Rectangle().fill(JMColor.divider)
+                        }
+                    }
+                    .frame(height: 150)
+                    .clipped()
+                }
+                VStack(alignment: .leading, spacing: JMSpacing.s) {
+                    Text(prefs.preferredBlogTopics.isEmpty ? "From the Just Mind blog" : "For you · from the Just Mind blog")
+                        .font(JMFont.sectionLabel)
+                        .foregroundStyle(JMColor.textSecondary)
+                        .tracking(0.96)
+                        .textCase(.uppercase)
+                    Text(post.title)
+                        .font(JMFont.blogTitle)
+                        .foregroundStyle(JMColor.textPrimary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(3)
+                    if !post.excerpt.isEmpty {
+                        Text(post.excerpt)
+                            .font(JMFont.callout)
+                            .foregroundStyle(JMColor.textSecondary)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(2)
+                    }
+                }
+                .padding(JMSpacing.l)
+            }
+            .background(JMColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous)
+                    .strokeBorder(JMColor.divider, lineWidth: JMHairline.width)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func loadFeaturedPost() async {
+        guard !didLoadFeatured else { return }
+        didLoadFeatured = true
+        let post = await BlogService.shared.featuredPost(forTopicLabels: prefs.preferredBlogTopics)
+        await MainActor.run { featuredPost = post }
     }
 
     // MARK: Session alliance (Change 5)
@@ -190,6 +270,7 @@ struct HomeView: View {
             .sheet(item: $safariItem) { SafariView(url: $0.url) }
             .sheet(isPresented: $showSessionPrep) { SessionPrepSheet() }
             .onAppear { animateEntry() }
+            .task { await loadFeaturedPost() }
         }
     }
 
@@ -238,15 +319,22 @@ struct HomeView: View {
                         .lineSpacing(3)
                         .multilineTextAlignment(.leading)
                 } else {
-                    HStack {
+                    // Show the actual daily prompt as an invitation, with a
+                    // quiet secondary action beneath it.
+                    Text(JournalPrompts.promptForToday())
+                        .font(JMFont.headline)
+                        .foregroundStyle(JMColor.textPrimary)
+                        .lineLimit(3)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
                         Text("Write today's entry")
-                            .font(JMFont.bodyEmph)
-                            .foregroundStyle(JMColor.textPrimary)
-                        Spacer()
+                            .font(JMFont.callout)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .light))
-                            .foregroundStyle(JMColor.textSecondary)
+                            .font(.system(size: 12, weight: .light))
                     }
+                    .foregroundStyle(JMColor.primary)
+                    .padding(.top, JMSpacing.xs)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -259,10 +347,8 @@ struct HomeView: View {
 
     private var quickActions: some View {
         VStack(spacing: 0) {
-            quickActionRow(systemImage: "pencil.line", title: "Write today's entry") {
-                selectedTab = .checkIn; checkInSection = .journal
-            }
-            JMHairline()
+            // "Write today's entry" lives on the TODAY card above, so it's not
+            // repeated here.
             quickActionRow(systemImage: "list.bullet", title: "Complete WCI") {
                 selectedTab = .checkIn; checkInSection = .ros
             }

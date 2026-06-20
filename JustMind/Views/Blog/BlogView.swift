@@ -19,6 +19,7 @@ final class BlogStore {
 
 struct BlogView: View {
     @Environment(\.modelContext) private var context
+    @Environment(AppPreferences.self) private var prefs
     @State private var store = BlogStore()
     @State private var safariItem: SafariSheetItem?
 
@@ -144,6 +145,16 @@ struct BlogView: View {
                 }
                 if !ids.isEmpty, totalCount > 0 {
                     chips.append((entry.label, ids))
+                }
+            }
+            // Prepend a "For You" chip from the topics chosen in onboarding,
+            // and make it the default selection so the Blog opens to them.
+            let preferred = prefs.preferredBlogTopics
+            if !preferred.isEmpty {
+                let unionIDs = BlogService.tagIDs(forTopicLabels: preferred, in: tags)
+                if !unionIDs.isEmpty {
+                    chips.insert(("For You", unionIDs), at: 0)
+                    if store.selected == "All" { store.selected = "For You" }
                 }
             }
             store.visibleChips = chips
