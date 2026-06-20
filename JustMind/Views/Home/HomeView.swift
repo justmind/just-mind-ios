@@ -385,12 +385,9 @@ struct HomeView: View {
     }
 
     /// Quote card: a moment of stillness. No card chrome, no border, no shadow.
-    /// Sits flush on the background. Sage leaf, italic body, slow fades.
+    /// Sits flush on the background. Italic body, slow fades.
     private var quoteCard: some View {
         VStack(alignment: .leading, spacing: JMSpacing.s) {
-            Image(systemName: "leaf")
-                .font(.system(size: 16, weight: .light))
-                .foregroundStyle(JMColor.primary.opacity(0.55)) // muted sage
             Text(displayedQuote)
                 .font(.system(size: 16, weight: .regular).italic())
                 .foregroundStyle(JMColor.textPrimary)

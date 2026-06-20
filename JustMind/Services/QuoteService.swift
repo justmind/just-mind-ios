@@ -25,7 +25,6 @@ enum QuoteService {
         "Healing rarely looks the way we expect it to.",
         "You don't have to perform okay-ness here.",
         "Your nervous system has been doing its best.",
-        "Some days, getting through is the win.",
         "It's not weakness to ask for help. It's wisdom.",
         "Self-compassion isn't earned. It's practiced.",
         "You're allowed to change your mind.",
