@@ -17,7 +17,8 @@ enum JournalPrompts {
         "What were you doing when you felt most like yourself today?",
         "What's the loop your mind keeps coming back to?",
         "What's gone well this week and what's been a challenge?",
-        "What part of today felt heavier than it needed to?"
+        "What part of today felt heavier than it needed to?",
+        "Where in your body feels calm or steady right now, even a little? Rest your attention there for a moment."
     ]
 
     static func promptForToday(_ date: Date = .now) -> String {
