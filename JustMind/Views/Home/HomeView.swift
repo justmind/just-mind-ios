@@ -12,8 +12,6 @@ struct HomeView: View {
     @State private var cardsAppeared: [Bool] = []
     @State private var allianceScore: Double = 5.0
     @State private var allianceDismissed: Bool = false
-    @State private var featuredPost: BlogPost?
-    @State private var didLoadFeatured: Bool = false
 
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var moods: [MoodEntry]
     @Query(sort: \SessionAllianceEntry.date, order: .reverse) private var allianceEntries: [SessionAllianceEntry]
@@ -47,19 +45,16 @@ struct HomeView: View {
             items.append(("alliance", AnyView(allianceInputCard)))
         }
         items.append(("mood", AnyView(moodSummaryCard)))
+        // Show the next appointment whenever one is entered and still upcoming.
+        if let appt = prefs.nextAppointment, appt.timeIntervalSinceNow > 0 {
+            items.append(("appointment", AnyView(appointmentCard(date: appt))))
+        }
         items.append(("quickActions", AnyView(quickActions)))
         if wciEntries.count >= 2 {
             items.append(("wciTrend", AnyView(wciTrendCard)))
         }
         if allianceEntries.count >= 2 {
             items.append(("allianceTrend", AnyView(allianceSparkline)))
-        }
-        if let appt = prefs.nextAppointment, appt.timeIntervalSinceNow > 0,
-           appt.timeIntervalSinceNow < 72 * 3600 {
-            items.append(("appointment", AnyView(appointmentCard(date: appt))))
-        }
-        if let post = featuredPost {
-            items.append(("featuredBlog", AnyView(featuredBlogCard(post))))
         }
         return items
     }
@@ -78,62 +73,6 @@ struct HomeView: View {
     }
 
     // MARK: Featured blog article
-
-    private func featuredBlogCard(_ post: BlogPost) -> some View {
-        Button {
-            if let url = URL(string: post.url) {
-                safariItem = SafariSheetItem(url: url)
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                if let urlStr = post.imageURL, let url = URL(string: urlStr) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        case .empty: Rectangle().fill(JMColor.divider).overlay(ProgressView())
-                        default: Rectangle().fill(JMColor.divider)
-                        }
-                    }
-                    .frame(height: 150)
-                    .clipped()
-                }
-                VStack(alignment: .leading, spacing: JMSpacing.s) {
-                    Text(prefs.preferredBlogTopics.isEmpty ? "From the Just Mind blog" : "For you · from the Just Mind blog")
-                        .font(JMFont.sectionLabel)
-                        .foregroundStyle(JMColor.textSecondary)
-                        .tracking(0.96)
-                        .textCase(.uppercase)
-                    Text(post.title)
-                        .font(JMFont.blogTitle)
-                        .foregroundStyle(JMColor.textPrimary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(3)
-                    if !post.excerpt.isEmpty {
-                        Text(post.excerpt)
-                            .font(JMFont.callout)
-                            .foregroundStyle(JMColor.textSecondary)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(2)
-                    }
-                }
-                .padding(JMSpacing.l)
-            }
-            .background(JMColor.surface)
-            .clipShape(RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: JMRadius.card, style: .continuous)
-                    .strokeBorder(JMColor.divider, lineWidth: JMHairline.width)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func loadFeaturedPost() async {
-        guard !didLoadFeatured else { return }
-        didLoadFeatured = true
-        let post = await BlogService.shared.featuredPost(forTopicLabels: prefs.preferredBlogTopics)
-        await MainActor.run { featuredPost = post }
-    }
 
     // MARK: Session alliance (Change 5)
 
@@ -268,7 +207,6 @@ struct HomeView: View {
             .sheet(item: $safariItem) { SafariView(url: $0.url) }
             .sheet(isPresented: $showSessionPrep) { SessionPrepSheet() }
             .onAppear { animateEntry() }
-            .task { await loadFeaturedPost() }
         }
     }
 
@@ -387,11 +325,17 @@ struct HomeView: View {
         let f = DateFormatter()
         f.dateFormat = "EEEE, MMM d 'at' h:mm a"
         return VStack(alignment: .leading, spacing: JMSpacing.s) {
-            Text("Next session")
-                .font(JMFont.sectionLabel)
-                .foregroundStyle(JMColor.textSecondary)
-                .tracking(0.96)
-                .textCase(.uppercase)
+            HStack {
+                Text("Next session")
+                    .font(JMFont.sectionLabel)
+                    .foregroundStyle(JMColor.textSecondary)
+                    .tracking(0.96)
+                    .textCase(.uppercase)
+                Spacer()
+                Text(relativeAppointment(date))
+                    .font(JMFont.caption)
+                    .foregroundStyle(JMColor.primary)
+            }
             Text(f.string(from: date))
                 .font(JMFont.title)
                 .foregroundStyle(JMColor.textPrimary)
@@ -411,6 +355,16 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .jmCard(elevated: true)
+    }
+
+    /// "Today" / "Tomorrow" / "In N days" for the appointment overline.
+    private func relativeAppointment(_ date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return "Today" }
+        if cal.isDateInTomorrow(date) { return "Tomorrow" }
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: .now), to: cal.startOfDay(for: date)).day ?? 0
+        if days <= 7 { return "In \(days) days" }
+        return ""
     }
 }
 

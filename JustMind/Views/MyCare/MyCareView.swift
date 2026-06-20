@@ -24,7 +24,13 @@ struct MyCareView: View {
                 VStack(alignment: .leading, spacing: JMSpacing.xl) {
                     crisisRow
                     section(title: "Portal") {
-                        portalCards
+                        VStack(alignment: .leading, spacing: JMSpacing.s) {
+                            portalCards
+                            Text("For scheduling questions, it's best to email your therapist directly.")
+                                .font(JMFont.caption)
+                                .foregroundStyle(JMColor.textSecondary)
+                                .padding(.horizontal, JMSpacing.xs)
+                        }
                     }
                     section(title: "Settings") {
                         settings
@@ -105,7 +111,7 @@ struct MyCareView: View {
 
     private var portalCards: some View {
         VStack(spacing: 0) {
-            portalRow(icon: "message", title: "Message my therapist", subtitle: "Reach out between sessions")
+            portalRow(icon: "message", title: "Message my therapist", subtitle: "Send a secure message")
             JMHairline()
             portalRow(icon: "doc.text", title: "Invoices & billing", subtitle: "Access your statements")
             JMHairline()
