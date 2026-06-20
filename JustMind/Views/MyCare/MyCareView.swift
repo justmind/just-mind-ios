@@ -12,6 +12,7 @@ struct MyCareView: View {
     @State private var showClearConfirm: Bool = false
     @State private var biometricsUnavailable: String?
     @State private var showCrisis: Bool = false
+    @State private var showBlogTopics: Bool = false
 
     private let portalURL = URL(string: "https://justmind.intakeq.com/portal")!
     private let privacyURL = URL(string: "https://justmind.org/privacy-policy/")!
@@ -40,6 +41,7 @@ struct MyCareView: View {
             .navigationBarTitleDisplayMode(.large)
             .sheet(item: $safariItem) { SafariView(url: $0.url) }
             .sheet(isPresented: $showCrisis) { CrisisResourcesView() }
+            .sheet(isPresented: $showBlogTopics) { BlogTopicsEditorView() }
             .alert("Clear all your data?", isPresented: $showClearConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete Everything", role: .destructive, action: clearAll)
@@ -146,6 +148,12 @@ struct MyCareView: View {
         .buttonStyle(.plain)
     }
 
+    private var blogTopicsSummary: String {
+        prefs.preferredBlogTopics.isEmpty
+            ? "All articles"
+            : prefs.preferredBlogTopics.joined(separator: ", ")
+    }
+
     // MARK: Settings
 
     private var settings: some View {
@@ -169,6 +177,33 @@ struct MyCareView: View {
             }
             .padding(.horizontal, JMSpacing.l)
             .padding(.vertical, JMSpacing.m)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .jmQuietCardFlush()
+
+            // Blog topics
+            Button {
+                showBlogTopics = true
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Blog topics")
+                            .font(JMFont.body)
+                            .foregroundStyle(JMColor.textPrimary)
+                        Text(blogTopicsSummary)
+                            .font(JMFont.caption)
+                            .foregroundStyle(JMColor.textSecondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(JMColor.textSecondary.opacity(0.7))
+                }
+                .padding(.horizontal, JMSpacing.l)
+                .padding(.vertical, JMSpacing.l)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
             .frame(maxWidth: .infinity, alignment: .leading)
             .jmQuietCardFlush()
 
@@ -363,5 +398,65 @@ struct MyCareView: View {
             // Best effort.
         }
         prefs.resetAll()
+    }
+}
+
+/// Lets the user change which blog topics are prioritized (or clear them to
+/// see all articles). Reuses the onboarding chip grid.
+private struct BlogTopicsEditorView: View {
+    @Environment(AppPreferences.self) private var prefs
+    @Environment(\.dismiss) private var dismiss
+    @State private var selected: Set<String> = []
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: JMSpacing.l) {
+                    Text("Choose the topics you'd like to see first in the Blog. With none selected, you'll see all articles.")
+                        .font(JMFont.body)
+                        .foregroundStyle(JMColor.textSecondary)
+                        .lineSpacing(3)
+                        .padding(.top, JMSpacing.s)
+
+                    FlowChips(
+                        topics: BlogService.curatedTagSlugs.map(\.label),
+                        selected: $selected
+                    )
+
+                    if !selected.isEmpty {
+                        Button("Show all articles") {
+                            selected = []
+                        }
+                        .buttonStyle(.jmGhost)
+                        .padding(.top, JMSpacing.s)
+                    }
+                }
+                .padding(.horizontal, JMSpacing.l)
+                .padding(.bottom, JMSpacing.xxl)
+            }
+            .background(JMColor.background.ignoresSafeArea())
+            .navigationTitle("Blog topics")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                        .tint(JMColor.textSecondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") { save() }
+                        .tint(JMColor.primary)
+                        .font(JMFont.bodyEmph)
+                }
+            }
+            .onAppear { selected = Set(prefs.preferredBlogTopics) }
+        }
+    }
+
+    private func save() {
+        // Preserve the curated order rather than Set ordering.
+        prefs.preferredBlogTopics = BlogService.curatedTagSlugs
+            .map(\.label)
+            .filter { selected.contains($0) }
+        dismiss()
     }
 }

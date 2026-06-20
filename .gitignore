@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Unrelated sibling project that lives alongside the iOS app locally
+google-sheets-client-matching/
+
 # Xcode user-specific files
 xcuserdata/
 *.xcuserstate

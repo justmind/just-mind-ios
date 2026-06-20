@@ -193,8 +193,9 @@ struct OnboardingView: View {
     }
 }
 
-/// A wrapping row of selectable topic chips.
-private struct FlowChips: View {
+/// A wrapping grid of selectable topic chips. Shared by onboarding and the
+/// My Care settings editor.
+struct FlowChips: View {
     let topics: [String]
     @Binding var selected: Set<String>
 

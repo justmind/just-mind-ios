@@ -77,8 +77,10 @@ actor BlogService {
         return tags.filter { slugs.contains($0.slug) }.map { $0.id }
     }
 
-    /// The most recent post matching the user's chosen topics — for the Home
-    /// featured card. Falls back to newest-overall if no topics are set.
+    /// A featured post matching the user's chosen topics — for the Home card.
+    /// Pulls the most recent few and rotates among them by calendar day, so the
+    /// card stays fresh instead of showing the same article until a new one is
+    /// published. Falls back to newest-overall if no topics are set.
     func featuredPost(forTopicLabels labels: [String]) async -> BlogPost? {
         do {
             var ids: [Int] = []
@@ -86,8 +88,10 @@ actor BlogService {
                 let tags = try await fetchTags()
                 ids = Self.tagIDs(forTopicLabels: labels, in: tags)
             }
-            let posts = try await fetchPosts(tagIDs: ids, page: 1, perPage: 1)
-            return posts.first
+            let posts = try await fetchPosts(tagIDs: ids, page: 1, perPage: 6)
+            guard !posts.isEmpty else { return nil }
+            let day = Calendar.current.ordinality(of: .day, in: .year, for: .now) ?? 1
+            return posts[day % posts.count]
         } catch {
             return nil
         }
