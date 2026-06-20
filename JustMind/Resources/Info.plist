@@ -38,13 +38,6 @@
     <array>
         <string>UIInterfaceOrientationPortrait</string>
     </array>
-    <key>UISupportedInterfaceOrientations~ipad</key>
-    <array>
-        <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationPortraitUpsideDown</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
-    </array>
     <key>NSFaceIDUsageDescription</key>
     <string>Just Mind uses Face ID to keep your check-ins private on this device.</string>
     <key>ITSAppUsesNonExemptEncryption</key>
