@@ -26,7 +26,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: org.justmind.companion
         PRODUCT_NAME: Just Mind
         PRODUCT_MODULE_NAME: JustMind
-        MARKETING_VERSION: "1.0.1"
+        MARKETING_VERSION: "1.0.2"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: JustMind/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
