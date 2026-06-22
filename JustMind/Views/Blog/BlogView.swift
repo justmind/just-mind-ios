@@ -62,7 +62,12 @@ struct BlogView: View {
                     LazyVStack(spacing: JMSpacing.m) {
                         ForEach(store.posts) { post in
                             BlogCard(post: post) {
-                                if let url = URL(string: post.url) {
+                                // Only open web links — SFSafariViewController
+                                // requires http(s), and we won't follow any
+                                // other scheme from remote content.
+                                if let url = URL(string: post.url),
+                                   let scheme = url.scheme?.lowercased(),
+                                   scheme == "https" || scheme == "http" {
                                     safariItem = SafariSheetItem(url: url)
                                 }
                             }

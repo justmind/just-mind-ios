@@ -65,7 +65,7 @@ struct ROSHistoryView: View {
                     ROSTrendsView()
                 }
             }
-            .sheet(item: $shareItem) { ShareSheet(items: [$0.url]) }
+            .sheet(item: $shareItem) { ShareSheet(items: [$0.url], cleanupURLs: [$0.url]) }
             .confirmationDialog(
                 "Delete this entry?",
                 isPresented: Binding(
