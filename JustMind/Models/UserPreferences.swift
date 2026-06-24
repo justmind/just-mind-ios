@@ -8,6 +8,7 @@ enum UserPreferences {
         static let appLockEnabled = "jm.appLockEnabled"
         static let nextAppointment = "jm.nextAppointment"
         static let preferredBlogTopics = "jm.preferredBlogTopics"
+        static let appOpenCount = "jm.appOpenCount"
     }
 }
 
@@ -63,7 +64,8 @@ final class AppPreferences {
             UserPreferences.Keys.preferredName,
             UserPreferences.Keys.appLockEnabled,
             UserPreferences.Keys.nextAppointment,
-            UserPreferences.Keys.preferredBlogTopics
+            UserPreferences.Keys.preferredBlogTopics,
+            UserPreferences.Keys.appOpenCount
         ] {
             d.removeObject(forKey: key)
         }

@@ -16,6 +16,7 @@ struct RootView: View {
     // app) re-triggering the lock / a second prompt while we're mid-auth.
     @State private var isAuthenticating: Bool = false
     @State private var showSplash: Bool = true
+    @State private var showLockPrompt: Bool = false
 
     var body: some View {
         ZStack {
@@ -71,6 +72,37 @@ struct RootView: View {
 
             // Keep the weekly check-in nudge current with the latest data.
             await CheckInReminders.refreshSchedule()
+
+            // Gentle, occasional nudge to set up an app lock.
+            maybeShowLockPrompt()
+        }
+        .alert("Keep your check-ins private?", isPresented: $showLockPrompt) {
+            Button("Enable lock") { enableLock() }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("Add Face ID, Touch ID, or your passcode so only you can open Just Mind.")
+        }
+    }
+
+    /// Increment the cold-launch counter and, if the user hasn't set up a
+    /// lock, nudge them at the 3rd and 10th open — then stop, so it never nags.
+    private func maybeShowLockPrompt() {
+        guard prefs.onboardingComplete else { return }
+        let d = UserDefaults.standard
+        let count = d.integer(forKey: UserPreferences.Keys.appOpenCount) + 1
+        d.set(count, forKey: UserPreferences.Keys.appOpenCount)
+        guard !prefs.appLockEnabled else { return }
+        if count == 3 || count == 10 {
+            showLockPrompt = true
+        }
+    }
+
+    private func enableLock() {
+        Task {
+            let result = await BiometricsService.authenticate(reason: "Enable app lock for Just Mind")
+            if case .success = result {
+                prefs.appLockEnabled = true
+            }
         }
     }
 

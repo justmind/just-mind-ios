@@ -7,7 +7,7 @@ struct OnboardingView: View {
     @State private var selectedTopics: Set<String> = []
     @FocusState private var nameFocused: Bool
 
-    private let pageCount = 4
+    private let pageCount = 5
 
     var body: some View {
         ZStack {
@@ -18,6 +18,7 @@ struct OnboardingView: View {
                     featuresCard.tag(1)
                     topicsCard.tag(2)
                     nameCard.tag(3)
+                    lockCard.tag(4)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .indexViewStyle(.page(backgroundDisplayMode: .never))
@@ -158,19 +159,9 @@ struct OnboardingView: View {
                     .foregroundStyle(JMColor.textSecondary)
             }
             Spacer()
-            Button("Get Started") {
-                let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-                prefs.preferredName = trimmed.isEmpty ? "friend" : trimmed
-                prefs.preferredBlogTopics = BlogService.curatedTagSlugs
-                    .map(\.label)
-                    .filter { selectedTopics.contains($0) } // preserve curated order
-                // Ask for notification permission here (after the name), not at
-                // launch. If denied, the weekly nudge simply never schedules.
-                Task {
-                    await CheckInReminders.requestAuthorization()
-                    await CheckInReminders.refreshSchedule()
-                }
-                prefs.onboardingComplete = true
+            Button("Continue") {
+                nameFocused = false
+                withAnimation { page = 4 }
             }
             .buttonStyle(.jmPrimary)
             .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -179,6 +170,59 @@ struct OnboardingView: View {
         .padding(.horizontal, JMSpacing.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { nameFocused = true }
+    }
+
+    private var lockCard: some View {
+        VStack(alignment: .leading, spacing: JMSpacing.l) {
+            Spacer()
+            Image(systemName: "faceid")
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(JMColor.primary)
+                .padding(.bottom, JMSpacing.s)
+            Text("Keep it\nprivate.")
+                .font(JMFont.display)
+                .jmDisplayTracking()
+                .foregroundStyle(JMColor.textPrimary)
+                .lineSpacing(2)
+            Text("Add Face ID, Touch ID, or your passcode so only you can open Just Mind. You can change this anytime in My Care.")
+                .font(JMFont.body)
+                .foregroundStyle(JMColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            VStack(spacing: JMSpacing.m) {
+                Button("Enable lock") { enableLockThenFinish() }
+                    .buttonStyle(.jmPrimary)
+                Button("Maybe later") { finishOnboarding() }
+                    .buttonStyle(.jmGhost)
+            }
+        }
+        .padding(.horizontal, JMSpacing.xl)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func enableLockThenFinish() {
+        Task {
+            let result = await BiometricsService.authenticate(reason: "Enable app lock for Just Mind")
+            if case .success = result {
+                prefs.appLockEnabled = true
+            }
+            finishOnboarding()
+        }
+    }
+
+    /// Persist the choices made across onboarding and mark it complete.
+    private func finishOnboarding() {
+        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+        prefs.preferredName = trimmed.isEmpty ? "friend" : trimmed
+        prefs.preferredBlogTopics = BlogService.curatedTagSlugs
+            .map(\.label)
+            .filter { selectedTopics.contains($0) } // preserve curated order
+        // Ask for notification permission now (after setup), not at launch.
+        Task {
+            await CheckInReminders.requestAuthorization()
+            await CheckInReminders.refreshSchedule()
+        }
+        prefs.onboardingComplete = true
     }
 
     private var pageDots: some View {
