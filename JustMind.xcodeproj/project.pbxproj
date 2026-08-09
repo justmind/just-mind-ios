@@ -26,10 +26,13 @@
 		56BA3398A54F25C0E253CEF3 /* JournalHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3591D601CB170F7C320B2145 /* JournalHistoryView.swift */; };
 		5DFE40F11B1CEB6063AC3AE9 /* CachedPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4382DF1987C8881E074C1F /* CachedPost.swift */; };
 		6FED0B5E5021497A20BB25A0 /* ScoringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D229B98B3FE43DEA827B133 /* ScoringTests.swift */; };
+		802098EB6F9BF22DA34BAF53 /* JournalEntryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B64C8126A031A52DF262C20 /* JournalEntryRow.swift */; };
 		8961CC2BD9BB3567029C56D4 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB16CABDA9FD1EADCF2EA84 /* OnboardingView.swift */; };
 		8A0B60945461C2F204E62575 /* ROSEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DAFF49573C134AF39A640E4 /* ROSEntry.swift */; };
 		8BD591602D60CFAAA9DBFCED /* MigrationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9945F5896F38B5C8FEE79B8C /* MigrationPlan.swift */; };
 		A40AF0633B36E68850ED97F6 /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD83D23ACB5A5DB6B369377 /* CheckInView.swift */; };
+		A4A9285DE8B0F80D13BE4297 /* JournalCrisisScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADBF4D4501754F9779C5149F /* JournalCrisisScan.swift */; };
+		A4D7720C093131081AC7A617 /* JournalDigestPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DE1377F00FDC8DFB37F16B6 /* JournalDigestPDFExporter.swift */; };
 		A4E5F4E0F4B87EBD594E2A23 /* MyCareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5E5BDD99C52E63418C644 /* MyCareView.swift */; };
 		AD61E4D0AC685F3CDD6C2EF3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 25DF19910B531103AFB9B739 /* Assets.xcassets */; };
 		B07181AC69AFAE805B27AC0C /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71CCEE5C8C9B338E9A6E6C4 /* JournalView.swift */; };
@@ -62,6 +65,7 @@
 		1010FEB386A4899692106F12 /* BlogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlogView.swift; sourceTree = "<group>"; };
 		108D55543723F1CD6BD986FB /* QuoteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteService.swift; sourceTree = "<group>"; };
 		1C4382DF1987C8881E074C1F /* CachedPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedPost.swift; sourceTree = "<group>"; };
+		1DE1377F00FDC8DFB37F16B6 /* JournalDigestPDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalDigestPDFExporter.swift; sourceTree = "<group>"; };
 		23FB0C9B6302B2F0AF89D211 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		25DF19910B531103AFB9B739 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		27E3E9D4F038BB9D800DA0FA /* JournalEntryEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryEditorSheet.swift; sourceTree = "<group>"; };
@@ -86,8 +90,10 @@
 		91E4000ED39A9B1FB4FEB50E /* ROSTrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ROSTrendsView.swift; sourceTree = "<group>"; };
 		92DCDB849BBCD1B2F0BE7ED5 /* JustMindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JustMindApp.swift; sourceTree = "<group>"; };
 		9945F5896F38B5C8FEE79B8C /* MigrationPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationPlan.swift; sourceTree = "<group>"; };
+		9B64C8126A031A52DF262C20 /* JournalEntryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryRow.swift; sourceTree = "<group>"; };
 		A42F330A8F841606428ABA8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A71CCEE5C8C9B338E9A6E6C4 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		ADBF4D4501754F9779C5149F /* JournalCrisisScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalCrisisScan.swift; sourceTree = "<group>"; };
 		BE0460397F01772450EC13B3 /* UserPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPreferences.swift; sourceTree = "<group>"; };
 		D1C1280E8A5BA8AA344E69AF /* ROSHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ROSHistoryView.swift; sourceTree = "<group>"; };
 		E7D9326F763EDC406026EAE2 /* WCIPDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WCIPDFExporter.swift; sourceTree = "<group>"; };
@@ -103,6 +109,7 @@
 			children = (
 				7CD83D23ACB5A5DB6B369377 /* CheckInView.swift */,
 				27E3E9D4F038BB9D800DA0FA /* JournalEntryEditorSheet.swift */,
+				9B64C8126A031A52DF262C20 /* JournalEntryRow.swift */,
 				3591D601CB170F7C320B2145 /* JournalHistoryView.swift */,
 				A71CCEE5C8C9B338E9A6E6C4 /* JournalView.swift */,
 				3BFFDF2229BF4785812FE8F4 /* LowScoreSupportSheet.swift */,
@@ -143,6 +150,8 @@
 				F56E3EEE61C0DD43A7505A23 /* BiometricsService.swift */,
 				3219A673108779CAA992A10F /* BlogService.swift */,
 				8BD5EE4D1CFC63EACDAA162A /* CheckInReminders.swift */,
+				ADBF4D4501754F9779C5149F /* JournalCrisisScan.swift */,
+				1DE1377F00FDC8DFB37F16B6 /* JournalDigestPDFExporter.swift */,
 				75C04F0DBB1F24580620B7A8 /* JournalPrompts.swift */,
 				108D55543723F1CD6BD986FB /* QuoteService.swift */,
 				E7D9326F763EDC406026EAE2 /* WCIPDFExporter.swift */,
@@ -354,7 +363,10 @@
 				449A436EE1B8BB7B43031ACA /* CrisisResourcesView.swift in Sources */,
 				DD221CCCFE13B90E392DE2E1 /* HomeView.swift in Sources */,
 				55793FB95E5960E466F7C365 /* JMTheme.swift in Sources */,
+				A4A9285DE8B0F80D13BE4297 /* JournalCrisisScan.swift in Sources */,
+				A4D7720C093131081AC7A617 /* JournalDigestPDFExporter.swift in Sources */,
 				D42C46E5FEC7BC4A85A72C89 /* JournalEntryEditorSheet.swift in Sources */,
+				802098EB6F9BF22DA34BAF53 /* JournalEntryRow.swift in Sources */,
 				56BA3398A54F25C0E253CEF3 /* JournalHistoryView.swift in Sources */,
 				2FAA969E090A980134C21680 /* JournalPrompts.swift in Sources */,
 				B07181AC69AFAE805B27AC0C /* JournalView.swift in Sources */,

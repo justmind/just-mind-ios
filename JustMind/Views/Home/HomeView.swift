@@ -249,24 +249,31 @@ struct HomeView: View {
                     .foregroundStyle(JMColor.textSecondary)
                     .tracking(0.96)
                     .textCase(.uppercase)
-                if let m = todayMood, !m.body.isEmpty {
-                    Text(m.body)
+                if let m = todayMood, m.hasContent {
+                    Text(m.previewText)
                         .font(JMFont.body)
                         .foregroundStyle(JMColor.textPrimary)
                         .lineLimit(4)
                         .lineSpacing(3)
                         .multilineTextAlignment(.leading)
+                    HStack(spacing: 6) {
+                        Text("View or edit")
+                            .font(JMFont.callout)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 12, weight: .light))
+                    }
+                    .foregroundStyle(JMColor.primary)
+                    .padding(.top, JMSpacing.xs)
                 } else {
-                    // Show the actual daily prompt as an invitation, with a
-                    // quiet secondary action beneath it.
-                    Text(JournalPrompts.promptForToday())
+                    // No entry yet — invite today's three-part check-in.
+                    Text("How was your day? A quick check-in on what went well and what was hard.")
                         .font(JMFont.headline)
                         .foregroundStyle(JMColor.textPrimary)
                         .lineLimit(3)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 6) {
-                        Text("Write today's entry")
+                        Text("Start today's check-in")
                             .font(JMFont.callout)
                         Image(systemName: "arrow.right")
                             .font(.system(size: 12, weight: .light))

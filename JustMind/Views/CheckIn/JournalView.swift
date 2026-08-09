@@ -1,32 +1,38 @@
 import SwiftUI
 import SwiftData
 
-/// The journaling experience. Stripped to its essentials: today's prompt,
-/// a comfortable writing surface, Save in the toolbar, and a quiet list of
-/// past entries below so the user can scroll back through prior days at a
-/// glance without leaving the screen.
+/// The daily micro-journal: three short prompts — what went well, what was a
+/// challenge, and what to try differently. One entry per day (editable), with a
+/// quiet list of past days below. Everything stays on-device.
 struct JournalView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var entries: [MoodEntry]
 
-    @State private var bodyText: String = ""
+    @State private var wentWell: String = ""
+    @State private var challenge: String = ""
+    @State private var tryDifferently: String = ""
     @State private var phase: SavePhase = .editing
-    @State private var prompt: String = JournalPrompts.promptForToday()
-    @State private var expandedEntries: Set<UUID> = []
+    @State private var didLoadToday: Bool = false
     @State private var showFullHistory: Bool = false
+    @State private var showCrisis: Bool = false
     @State private var editingEntry: MoodEntry?
     @State private var pendingDelete: MoodEntry?
-    @FocusState private var bodyFocused: Bool
+    @State private var expandedEntries: Set<UUID> = []
+    @FocusState private var focused: FieldID?
 
-    private enum SavePhase: Equatable {
-        case editing
-        case confirmation
+    private enum FieldID { case wins, challenge, experiment }
+    private enum SavePhase: Equatable { case editing, confirmation }
+
+    private var todaysEntry: MoodEntry? {
+        entries.first(where: { Calendar.current.isDateInToday($0.timestamp) })
     }
 
-    /// Last 5 entries surfaced in the inline "Past entries" section.
-    /// Anything more is reachable via the "View full history" link.
     private var recentEntries: [MoodEntry] {
-        Array(entries.prefix(5))
+        Array(entries.filter { $0.hasContent }.prefix(5))
+    }
+
+    private var canSave: Bool {
+        [wentWell, challenge, tryDifferently].contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     var body: some View {
@@ -39,7 +45,7 @@ struct JournalView: View {
                     .opacity(phase == .confirmation ? 1 : 0)
                     .allowsHitTesting(phase == .confirmation)
             }
-            .animation(.easeInOut(duration: 0.30), value: phase)
+            .animation(.easeInOut(duration: 0.3), value: phase)
         }
         .toolbar {
             if phase == .editing {
@@ -47,10 +53,15 @@ struct JournalView: View {
                     Button("Save") { save() }
                         .tint(JMColor.primary)
                         .font(JMFont.bodyEmph)
-                        .disabled(trimmedBody.isEmpty)
+                        .disabled(!canSave)
                 }
             }
         }
+        .onAppear {
+            if !didLoadToday { loadToday(); didLoadToday = true }
+        }
+        .sheet(item: $editingEntry) { JournalEntryEditorSheet(entry: $0) }
+        .sheet(isPresented: $showCrisis) { CrisisResourcesView() }
         .sheet(isPresented: $showFullHistory) {
             NavigationStack {
                 ScrollView {
@@ -63,19 +74,14 @@ struct JournalView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { showFullHistory = false }
-                            .tint(JMColor.primary)
+                        Button("Done") { showFullHistory = false }.tint(JMColor.primary)
                     }
                 }
             }
         }
-        .sheet(item: $editingEntry) { JournalEntryEditorSheet(entry: $0) }
         .confirmationDialog(
             "Delete this entry?",
-            isPresented: Binding(
-                get: { pendingDelete != nil },
-                set: { if !$0 { pendingDelete = nil } }
-            ),
+            isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) { confirmDelete() }
@@ -85,22 +91,33 @@ struct JournalView: View {
         }
     }
 
-    private func confirmDelete() {
-        if let entry = pendingDelete {
-            context.delete(entry)
-            try? context.save()
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-        }
-        pendingDelete = nil
-    }
-
     // MARK: Editing state
 
     private var editingState: some View {
         VStack(alignment: .leading, spacing: JMSpacing.xl) {
             header
-            entryField
+
+            promptField(
+                label: "What went well?",
+                placeholder: "A win, a moment of ease, something you're glad about.",
+                text: $wentWell,
+                field: .wins
+            )
+            promptField(
+                label: "What was a challenge?",
+                placeholder: "Something that felt hard or got in the way.",
+                text: $challenge,
+                field: .challenge
+            )
+            promptField(
+                label: "What could you try differently next time?",
+                placeholder: "A small experiment for the days ahead.",
+                text: $tryDifferently,
+                field: .experiment
+            )
+
             JMHairline().padding(.vertical, JMSpacing.s)
+
             pastEntries
         }
         .padding(.horizontal, JMSpacing.l)
@@ -114,28 +131,25 @@ struct JournalView: View {
                 .foregroundStyle(JMColor.textSecondary)
                 .tracking(0.96)
                 .textCase(.uppercase)
-            Text(prompt)
+            Text(todaysEntry == nil ? "Today's check-in" : "Today's check-in — saved")
                 .font(JMFont.title)
                 .jmDisplayTracking()
                 .foregroundStyle(JMColor.textPrimary)
-                .lineSpacing(2)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, JMSpacing.s)
     }
 
-    private var entryField: some View {
+    private func promptField(label: String, placeholder: String, text: Binding<String>, field: FieldID) -> some View {
         VStack(alignment: .leading, spacing: JMSpacing.s) {
-            // The editor is a bordered, fixed-height box so it clearly reads
-            // as a contained, scrollable region. Long entries scroll within
-            // the box (with a visible indicator) instead of pushing the past
-            // entries below off the page.
-            TextEditor(text: $bodyText)
+            Text(label)
+                .font(JMFont.bodyEmph)
+                .foregroundStyle(JMColor.textPrimary)
+            TextEditor(text: text)
                 .font(JMFont.body)
-                .lineSpacing(4)
+                .lineSpacing(3)
                 .scrollContentBackground(.hidden)
-                .focused($bodyFocused)
-                .frame(height: 240)
+                .focused($focused, equals: field)
+                .frame(height: 96)
                 .scrollIndicators(.visible)
                 .padding(.horizontal, JMSpacing.m)
                 .padding(.vertical, JMSpacing.s)
@@ -146,27 +160,15 @@ struct JournalView: View {
                         .strokeBorder(JMColor.divider, lineWidth: JMHairline.width)
                 )
                 .overlay(alignment: .topLeading) {
-                    if bodyText.isEmpty {
-                        Text("Write what you'd want to bring to your next session.")
-                            .font(JMFont.body)
+                    if text.wrappedValue.isEmpty {
+                        Text(placeholder)
+                            .font(JMFont.callout)
                             .foregroundStyle(JMColor.textSecondary.opacity(0.55))
                             .padding(.top, JMSpacing.s + 8)
                             .padding(.leading, JMSpacing.m + 5)
                             .allowsHitTesting(false)
                     }
                 }
-            HStack {
-                Text(wordCountLabel)
-                    .font(JMFont.caption)
-                    .foregroundStyle(JMColor.textSecondary)
-                    .monospacedDigit()
-                Spacer()
-                if bodyFocused {
-                    Button("Done") { bodyFocused = false }
-                        .font(JMFont.caption)
-                        .foregroundStyle(JMColor.primary)
-                }
-            }
         }
     }
 
@@ -179,17 +181,13 @@ struct JournalView: View {
                     .tracking(0.96)
                     .textCase(.uppercase)
                 Spacer()
-                // Always offer a path into the full grouped-by-day history,
-                // not just when there are more than 5 entries — long entries
-                // push siblings off-screen even with only one or two saves.
-                if !entries.isEmpty {
+                if !recentEntries.isEmpty {
                     Button {
                         showFullHistory = true
                     } label: {
                         HStack(spacing: 4) {
                             Text("Open history")
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 11, weight: .light))
+                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .light))
                         }
                         .font(JMFont.caption)
                         .foregroundStyle(JMColor.primary)
@@ -199,7 +197,7 @@ struct JournalView: View {
             }
 
             if recentEntries.isEmpty {
-                Text("Your past notes will appear here.")
+                Text("Your past check-ins will appear here.")
                     .font(JMFont.callout)
                     .foregroundStyle(JMColor.textSecondary.opacity(0.75))
                     .italic()
@@ -207,96 +205,17 @@ struct JournalView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(recentEntries.enumerated()), id: \.element.id) { idx, entry in
-                        pastEntryRow(entry: entry)
-                        if idx < recentEntries.count - 1 {
-                            JMHairline()
-                        }
+                        JournalEntryRow(
+                            entry: entry,
+                            isOpen: expandedEntries.contains(entry.id),
+                            onToggle: { toggleExpanded(entry.id) },
+                            onEdit: { editingEntry = entry },
+                            onDelete: { pendingDelete = entry }
+                        )
+                        if idx < recentEntries.count - 1 { JMHairline() }
                     }
                 }
                 .jmQuietCardFlush()
-            }
-        }
-    }
-
-    private func pastEntryRow(entry: MoodEntry) -> some View {
-        let isOpen = expandedEntries.contains(entry.id)
-        return Button {
-            withAnimation(.easeInOut(duration: 0.22)) {
-                if isOpen { expandedEntries.remove(entry.id) }
-                else { expandedEntries.insert(entry.id) }
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: JMSpacing.s) {
-                HStack(alignment: .top, spacing: JMSpacing.l) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(formattedRelative(entry.timestamp))
-                            .font(JMFont.caption)
-                            .foregroundStyle(JMColor.textSecondary)
-                            .tracking(0.5)
-                            .textCase(.uppercase)
-                        if entry.body.isEmpty {
-                            Text("(empty)")
-                                .font(JMFont.callout)
-                                .foregroundStyle(JMColor.textSecondary.opacity(0.6))
-                                .italic()
-                        } else {
-                            // Capped inline expansion (≤8 lines) so a long
-                            // entry doesn't push older entries off-screen.
-                            // For full text, the user opens history.
-                            Text(entry.body)
-                                .font(JMFont.body)
-                                .foregroundStyle(JMColor.textPrimary)
-                                .lineLimit(isOpen ? 8 : 2)
-                                .lineSpacing(3)
-                                .multilineTextAlignment(.leading)
-                        }
-                    }
-                    Spacer()
-                    Image(systemName: isOpen ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(JMColor.textSecondary.opacity(0.6))
-                        .padding(.top, 6)
-                }
-                if isOpen {
-                    if !entry.prompt.isEmpty {
-                        Text(entry.prompt)
-                            .font(JMFont.footnote)
-                            .foregroundStyle(JMColor.textSecondary)
-                            .italic()
-                            .lineSpacing(2)
-                            .padding(.top, JMSpacing.xs)
-                    }
-                    Button {
-                        showFullHistory = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text("Read full entry in history")
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 11, weight: .light))
-                        }
-                        .font(JMFont.caption)
-                        .foregroundStyle(JMColor.primary)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, JMSpacing.xs)
-                }
-            }
-            .padding(.horizontal, JMSpacing.l)
-            .padding(.vertical, JMSpacing.l)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button {
-                editingEntry = entry
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            Button(role: .destructive) {
-                pendingDelete = entry
-            } label: {
-                Label("Delete", systemImage: "trash")
             }
         }
     }
@@ -306,97 +225,99 @@ struct JournalView: View {
     private var confirmationState: some View {
         VStack(spacing: JMSpacing.xl) {
             Spacer().frame(height: JMSpacing.xxxl)
-
             Image(systemName: "checkmark")
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(JMColor.success)
                 .frame(width: 60, height: 60)
-                .overlay(
-                    Circle().strokeBorder(JMColor.success.opacity(0.4), lineWidth: 1)
-                )
-
+                .overlay(Circle().strokeBorder(JMColor.success.opacity(0.4), lineWidth: 1))
             VStack(spacing: JMSpacing.s) {
                 Text("Saved")
                     .font(JMFont.title)
                     .jmDisplayTracking()
                     .foregroundStyle(JMColor.textPrimary)
-                Text("Your note is recorded — only on this device.")
+                Text("Today's check-in is recorded — only on this device.")
                     .font(JMFont.callout)
                     .foregroundStyle(JMColor.textSecondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
             }
-
             VStack(spacing: JMSpacing.m) {
-                Button("New Entry") {
-                    resetForm()
-                }
-                .buttonStyle(.jmPrimary)
-                Button {
-                    resetForm()
+                Button("Done") { phase = .editing }
+                    .buttonStyle(.jmPrimary)
+                Button("View full history") {
+                    phase = .editing
                     showFullHistory = true
-                } label: {
-                    Text("View full history")
                 }
                 .buttonStyle(.jmGhost)
             }
             .padding(.horizontal, JMSpacing.l)
-
             Spacer()
         }
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: Helpers
+    // MARK: Actions
 
-    private var trimmedBody: String {
-        bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var wordCountLabel: String {
-        let count = bodyText.split { !$0.isLetter && !$0.isNumber && $0 != "'" }.count
-        return "\(count) word\(count == 1 ? "" : "s")"
+    private func loadToday() {
+        guard let entry = todaysEntry else { return }
+        wentWell = entry.wentWell
+        challenge = entry.challenge
+        tryDifferently = entry.tryDifferently
+        // Migrate a legacy single-body entry into the first prompt so it's editable.
+        if !entry.isThreePart, !entry.body.isEmpty {
+            wentWell = entry.body
+        }
     }
 
     private func save() {
-        guard !trimmedBody.isEmpty else { return }
-        bodyFocused = false
-        // score=3 is a placeholder kept for schema compatibility — the
-        // emoji UI was removed. The field stays so we don't have to migrate.
-        let entry = MoodEntry(
-            score: 3,
-            body: trimmedBody,
-            tags: [],
-            prompt: prompt
-        )
-        context.insert(entry)
+        focused = nil
+        let w = wentWell.trimmingCharacters(in: .whitespacesAndNewlines)
+        let c = challenge.trimmingCharacters(in: .whitespacesAndNewlines)
+        let t = tryDifferently.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !(w.isEmpty && c.isEmpty && t.isEmpty) else { return }
+
+        if let entry = todaysEntry {
+            entry.wentWell = w
+            entry.challenge = c
+            entry.tryDifferently = t
+            entry.body = "" // superseded by the three-part fields
+        } else {
+            let entry = MoodEntry(wentWell: w, challenge: c, tryDifferently: t)
+            context.insert(entry)
+        }
         try? context.save()
+        wentWell = w; challenge = c; tryDifferently = t
 
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+        // Local, gentle safety check — offer resources, never block or accuse.
+        if JournalCrisisScan.isTriggered(in: w, c, t) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showCrisis = true }
+        }
+
         phase = .confirmation
     }
 
-    private func resetForm() {
-        bodyText = ""
-        prompt = JournalPrompts.promptForToday()
-        phase = .editing
+    private func toggleExpanded(_ id: UUID) {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            if expandedEntries.contains(id) { expandedEntries.remove(id) } else { expandedEntries.insert(id) }
+        }
+    }
+
+    private func confirmDelete() {
+        if let entry = pendingDelete {
+            let wasToday = Calendar.current.isDateInToday(entry.timestamp)
+            context.delete(entry)
+            try? context.save()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            if wasToday { wentWell = ""; challenge = ""; tryDifferently = "" }
+        }
+        pendingDelete = nil
     }
 
     private var formattedToday: String {
         let f = DateFormatter()
         f.dateFormat = "EEEE, MMMM d"
         return f.string(from: .now)
-    }
-
-    private func formattedRelative(_ d: Date) -> String {
-        let f = DateFormatter()
-        if Calendar.current.isDateInToday(d) {
-            f.dateFormat = "'Today' · h:mm a"
-        } else if Calendar.current.isDateInYesterday(d) {
-            f.dateFormat = "'Yesterday' · h:mm a"
-        } else {
-            f.dateFormat = "EEE, MMM d"
-        }
-        return f.string(from: d)
     }
 }

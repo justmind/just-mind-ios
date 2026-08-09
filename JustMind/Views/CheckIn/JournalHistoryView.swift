@@ -22,11 +22,13 @@ struct JournalHistoryView: View {
     }
 
     @Environment(\.modelContext) private var context
+    @Environment(AppPreferences.self) private var prefs
     @Query(sort: \MoodEntry.timestamp, order: .reverse) private var allEntries: [MoodEntry]
     @State private var window: Window = .thirtyDay
     @State private var expanded: Set<UUID> = []
     @State private var editingEntry: MoodEntry?
     @State private var pendingDelete: MoodEntry?
+    @State private var shareItem: ShareItem?
 
     private var windowed: [MoodEntry] {
         guard let days = window.days else { return allEntries }
@@ -63,12 +65,14 @@ struct JournalHistoryView: View {
                     text: "No entries in this window. Try a longer range."
                 )
             } else {
+                weeklyDigestButton
                 ForEach(grouped, id: \.date) { day in
                     daySection(date: day.date, entries: day.entries)
                 }
             }
         }
         .sheet(item: $editingEntry) { JournalEntryEditorSheet(entry: $0) }
+        .sheet(item: $shareItem) { ShareSheet(items: [$0.url], cleanupURLs: [$0.url]) }
         .confirmationDialog(
             "Delete this entry?",
             isPresented: Binding(
@@ -93,6 +97,24 @@ struct JournalHistoryView: View {
         pendingDelete = nil
     }
 
+    private var weeklyDigestButton: some View {
+        Button {
+            if let url = JournalDigestPDFExporter.makeWeeklyDigest(
+                entries: allEntries,
+                clientName: prefs.preferredName.capitalized
+            ) {
+                shareItem = ShareItem(url: url)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.arrow.up").font(.system(size: 14))
+                Text("Share weekly digest with my therapist")
+            }
+        }
+        .buttonStyle(.jmGhost)
+        .accessibilityHint("Creates a PDF of the last 7 days of check-ins to email or share")
+    }
+
     // MARK: Day section
 
     private func daySection(date: Date, entries: [MoodEntry]) -> some View {
@@ -104,77 +126,24 @@ struct JournalHistoryView: View {
                 .textCase(.uppercase)
             VStack(spacing: 0) {
                 ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
-                    entryRow(entry: entry)
+                    JournalEntryRow(
+                        entry: entry,
+                        isOpen: expanded.contains(entry.id),
+                        onToggle: {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                if expanded.contains(entry.id) { expanded.remove(entry.id) }
+                                else { expanded.insert(entry.id) }
+                            }
+                        },
+                        onEdit: { editingEntry = entry },
+                        onDelete: { pendingDelete = entry }
+                    )
                     if idx < entries.count - 1 {
                         JMHairline()
                     }
                 }
             }
             .jmQuietCardFlush()
-        }
-    }
-
-    private func entryRow(entry: MoodEntry) -> some View {
-        let isOpen = expanded.contains(entry.id)
-        return Button {
-            withAnimation(.easeInOut(duration: 0.22)) {
-                if isOpen { expanded.remove(entry.id) } else { expanded.insert(entry.id) }
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: JMSpacing.s) {
-                HStack(alignment: .top, spacing: JMSpacing.m) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(formattedTime(entry.timestamp))
-                            .font(JMFont.caption)
-                            .foregroundStyle(JMColor.textSecondary)
-                            .tracking(0.5)
-                            .textCase(.uppercase)
-                        if entry.body.isEmpty {
-                            Text("(empty)")
-                                .font(JMFont.callout)
-                                .foregroundStyle(JMColor.textSecondary.opacity(0.6))
-                                .italic()
-                        } else {
-                            Text(entry.body)
-                                .font(JMFont.body)
-                                .foregroundStyle(JMColor.textPrimary)
-                                .lineLimit(isOpen ? nil : 3)
-                                .lineSpacing(3)
-                                .multilineTextAlignment(.leading)
-                        }
-                    }
-                    Spacer()
-                    Image(systemName: isOpen ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(JMColor.textSecondary.opacity(0.6))
-                        .padding(.top, 6)
-                }
-                if isOpen, !entry.prompt.isEmpty {
-                    Text(entry.prompt)
-                        .font(JMFont.footnote)
-                        .foregroundStyle(JMColor.textSecondary)
-                        .italic()
-                        .lineSpacing(2)
-                        .padding(.top, JMSpacing.xs)
-                }
-            }
-            .padding(.horizontal, JMSpacing.l)
-            .padding(.vertical, JMSpacing.l)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button {
-                editingEntry = entry
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            Button(role: .destructive) {
-                pendingDelete = entry
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
         }
     }
 
@@ -193,12 +162,6 @@ struct JournalHistoryView: View {
         let f = DateFormatter()
         f.dateFormat = "MMM d"
         return f.string(from: d).uppercased()
-    }
-
-    private func formattedTime(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: d)
     }
 }
 
